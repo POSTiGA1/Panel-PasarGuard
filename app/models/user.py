@@ -1,7 +1,7 @@
 from datetime import datetime as dt
 from enum import Enum
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_serializer
 
 from app.db.models import UserDataLimitResetStrategy, UserStatus, UserStatusCreate
 from app.models.admin import AdminBase, AdminContactInfo
@@ -23,6 +23,14 @@ class NextPlanModel(BaseModel):
     expire: int | None = Field(default=None)
     add_remaining_traffic: bool = False
     model_config = ConfigDict(from_attributes=True)
+
+    @model_serializer
+    def serialize_model(self) -> dict:
+        """Return empty dict if all fields are None, otherwise return all data."""
+        data = self.__dict__
+        if not all(v for v in data.values()):
+            return {}
+        return data
 
 
 class User(BaseModel):
