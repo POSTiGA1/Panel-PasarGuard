@@ -84,7 +84,13 @@
         "1h": "1小时",
         "2h": "2小时"
       }
-    }
+    },
+    "reconnectinfo": "刷新所有节点连接以解决连接问题",
+    "reconnectAll": "重新连接所有节点",
+    "reconnectingAll": "重新连接中...",
+    "reconnectAllSuccess": "所有节点已成功重新连接",
+    "reconnectAllFailed": "重新连接所有节点失败",
+    "reconnectAllPrompt": "您确定要重新连接所有节点吗？这将暂时断开所有活动连接，可能需要几分钟时间。"
   },
   "groups": "群组",
   "documentation": "文档",
@@ -610,7 +616,7 @@
   "deleteUser.title": "删除用户",
   "disabled": "禁用",
   "expire": "过期",
-  "expired": "已在 {{time}} 前过期",
+  "expired": "{{time}}已过期",
   "expires": "将在 {{time}} 后过期",
   "header.donation": "捐赠",
   "header.hostSettings": "设置",
@@ -658,7 +664,8 @@
     "packetPlaceholder": "输入数据包值（例如：rand:10-20）",
     "delay": "延迟",
     "delayPlaceholder": "输入延迟",
-    "rand": "随机"
+    "rand": "随机",
+    "applyTo": "应用到"
   },
   "hostsDialog.noise.info": "packet,delay (e.g. rand:10-20,100-200)",
   "hostsDialog.noise.info.attention": "Attention: currently, this feature only supported in streisand >= 1.6.32 and v2rayNG >= 1.8.39 (custom config)",
@@ -839,6 +846,7 @@
   "usersTable.total": "总共",
   "statistics.system": "系统",
   "statistics.totalTraffic": "总流量",
+  "statistics.networkSpeed": "网络速度",
   "statistics.ramUsage": "RAM 使用情况",
   "statistics.cpuUsage": "CPU 使用情况",
   "statistics.cores": "核心",
@@ -1530,5 +1538,19 @@
     "selectStatus": "选择状态 ..."
   },
   "clearAllFilters": "清除所有筛选器",
-  "activeFilters": "活跃"
+  "activeFilters": "活跃",
+  "donation": {
+    "title": "支持 PasarGuard",
+    "message": "您的支持帮助我们改进 PasarGuard 并为所有人构建更好的功能！",
+    "donate": "立即捐赠",
+    "starOnGitHub": "在 GitHub 上加星"
+  },
+  "goal": {
+    "currentGoal": "当前目标",
+    "of": "共",
+    "remaining": "剩余",
+    "contribute": "贡献",
+    "completed": "已完成",
+    "pending": "进行中"
+  }
 }

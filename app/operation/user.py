@@ -48,11 +48,10 @@ from app.models.user import (
 )
 from app.node import node_manager
 from app.operation import BaseOperation, OperatorType
-from app.utils.logger import get_logger
-from app.utils.jwt import create_subscription_token
 from app.settings import subscription_settings
+from app.utils.jwt import create_subscription_token
+from app.utils.logger import get_logger
 from config import SUBSCRIPTION_PATH
-
 
 logger = get_logger("user-operation")
 
@@ -143,7 +142,7 @@ class UserOperation(BaseOperation):
 
         user = await self.validate_user(db_user)
         await remove_user(db, db_user)
-        node_manager.remove_user(user)
+        await node_manager.remove_user(user)
 
         asyncio.create_task(notification.remove_user(user, admin))
 
@@ -400,14 +399,14 @@ class UserOperation(BaseOperation):
             if template.expire_duration:
                 user_args["expire"] = dt.now(tz.utc) + td(seconds=template.expire_duration)
             else:
-                user_args["expire"] = None
+                user_args["expire"] = 0
         else:
             user_args["expire"] = 0
             user_args["on_hold_expire_duration"] = template.expire_duration
             if template.on_hold_timeout:
                 user_args["on_hold_timeout"] = dt.now(tz.utc) + td(seconds=template.on_hold_timeout)
             else:
-                user_args["on_hold_timeout"] = None
+                user_args["on_hold_timeout"] = 0
 
         return user_args
 

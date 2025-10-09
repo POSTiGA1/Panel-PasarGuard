@@ -89,7 +89,13 @@
         "1h": "1 hour",
         "2h": "2 hours"
       }
-    }
+    },
+    "reconnectinfo": "Refresh all nodes connections to resolve connectivity issues",
+    "reconnectAll": "Reconnect All Nodes",
+    "reconnectingAll": "Reconnecting...",
+    "reconnectAllSuccess": "All nodes have been reconnected successfully",
+    "reconnectAllFailed": "Failed to reconnect all nodes",
+    "reconnectAllPrompt": "Are you sure you want to reconnect all nodes? This will temporarily disconnect all active connections and may take a few moments to complete."
   },
   "groups": "Groups",
   "documentation": "Documentation",
@@ -612,7 +618,7 @@
   "disabled": "disabled",
   "expire": "Expire",
   "expires": "Expires in {{time}}",
-  "expired": "Expired in {{time}}",
+  "expired": "Expired {{time}}",
   "header.donation": "Donation",
   "header.hostSettings": "Host Settings",
   "header.logout": "Log out",
@@ -774,7 +780,11 @@
       "rand": "Random",
       "info": "packet,delay (e.g. rand:10-20,100-200)",
       "info.attention": "Attention: currently, this feature only supported in streisand >= 1.6.32 and v2rayNG >= 1.8.39 (custom config)",
-      "info.examples": "Examples:"
+      "info.examples": "Examples:",
+      "applyTo": "Apply To",
+      "applyTo.ip": "IP",
+      "applyTo.ipv4": "IPv4",
+      "applyTo.ipv6": "IPv6"
     },
     "muxSettings": "Mux Settings",
     "enableMux": "Enable Mux",
@@ -1091,6 +1101,7 @@
   "usersTable.total": "Total",
   "statistics.system": "System",
   "statistics.totalTraffic": "Total Traffic",
+  "statistics.networkSpeed": "Network Speed",
   "statistics.ramUsage": "RAM Usage",
   "statistics.cpuUsage": "CPU Usage",
   "statistics.cores": "cores",
@@ -1364,6 +1375,7 @@
   "statistics.waitingForDataDescription": "Real-time statistics will appear here once data starts flowing.",
   "statistics.selectTimeRange": "Select Time Range",
   "statistics.selectTimeRangeDescription": "Choose a date range above to view traffic usage statistics.",
+  "statistics.selectTimeRangeToView": "Please select a time range to view historical data",
   "statistics.noDataInRange": "No Data in Selected Range",
   "statistics.noDataInRangeDescription": "No traffic data found for the selected time period. Try selecting a different date range.",
   "statistics.selectNodeToView": "Select a node to view detailed statistics",
@@ -1498,5 +1510,19 @@
     "selectStatus": "Select Status ... "
   },
   "clearAllFilters": "Clear All Filters",
-  "activeFilters": "active"
+  "activeFilters": "active",
+  "donation": {
+    "title": "Support PasarGuard",
+    "message": "Your support helps us improve PasarGuard and build better features for everyone!",
+    "donate": "Donate Now",
+    "starOnGitHub": "Star on GitHub"
+  },
+  "goal": {
+    "currentGoal": "Current Goal",
+    "of": "of",
+    "remaining": "Remaining",
+    "contribute": "Contribute",
+    "completed": "Completed",
+    "pending": "In Progress"
+  }
 }

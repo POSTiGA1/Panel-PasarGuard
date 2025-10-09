@@ -102,7 +102,13 @@
         "1h": "1 час",
         "2h": "2 часа"
       }
-    }
+    },
+    "reconnectinfo": "Обновить все соединения узлов для устранения проблем с подключением",
+    "reconnectAll": "Переподключить все узлы",
+    "reconnectingAll": "Переподключение...",
+    "reconnectAllSuccess": "Все узлы успешно переподключены",
+    "reconnectAllFailed": "Не удалось переподключить все узлы",
+    "reconnectAllPrompt": "Вы уверены, что хотите переподключить все узлы? Это временно отключит все активные соединения и может занять несколько минут."
   },
   "groups": "Группы",
   "documentation": "Документация",
@@ -584,7 +590,7 @@
   "deleteUser.title": "Удалить пользователя",
   "disabled": "disabled",
   "expire": "Истекает",
-  "expired": "Истекло {{time}} назад",
+  "expired": "Истёк {{time}}",
   "expires": "Истекает через {{time}}",
   "header.donation": "Пожертвование",
   "header.hostSettings": "Настройки хоста",
@@ -620,18 +626,22 @@
   "hostsDialog.fragment.fragment": "Фрагментация",
   "hostsDialog.fragment.fallbackDelay": "Задержка отката",
   "hostsDialog.fragment.recordFragment": "Запись фрагмента",
-  "hostsDialog.noise": {
-    "title": "Шум",
-    "type": "Тип",
-    "addNoise": "Добавить шум",
-    "removeNoise": "Удалить шум",
-    "noNoiseSettings": "Настройки шума не настроены",
-    "packet": "Пакет",
-    "packetPlaceholder": "Введите значение пакета (например: rand:10-20)",
-    "delay": "Задержка",
-    "delayPlaceholder": "Введите задержку",
-    "rand": "Случайный"
-  },
+    "noise": {
+      "title": "Шум",
+      "type": "Тип",
+      "addNoise": "Добавить шум",
+      "removeNoise": "Удалить шум",
+      "noNoiseSettings": "Настройки шума не настроены",
+      "packet": "Пакет",
+      "packetPlaceholder": "Введите значение пакета (например: rand:10-20)",
+      "delay": "Задержка",
+      "delayPlaceholder": "Введите задержку",
+      "rand": "Случайный",
+      "applyTo": "Применить к",
+      "applyTo.ip": "IP",
+      "applyTo.ipv4": "IPv4",
+      "applyTo.ipv6": "IPv6"
+    },
   "hostsDialog.noise.info": "packet,delay (e.g. rand:10-20,100-200)",
   "hostsDialog.noise.info.attention": "Attention: currently, this feature only supported in streisand >= 1.6.32 and v2rayNG >= 1.8.39 (custom config)",
   "hostsDialog.noise.info.examples": "Examples:",
@@ -800,6 +810,7 @@
   "usersTable.total": "Всего",
   "statistics.system": "Система",
   "statistics.totalTraffic": "Общий трафик",
+  "statistics.networkSpeed": "Скорость сети",
   "statistics.ramUsage": "Использование RAM",
   "statistics.cpuUsage": "Использование CPU",
   "statistics.cores": "ядер",
@@ -1316,6 +1327,7 @@
   "statistics.waitingForDataDescription": "Статистика в реальном времени появится здесь после начала передачи данных.",
   "statistics.selectTimeRange": "Выберите временной диапазон",
   "statistics.selectTimeRangeDescription": "Выберите диапазон дат выше, чтобы просмотреть статистику использования трафика.",
+  "statistics.selectTimeRangeToView": "Пожалуйста, выберите временной диапазон для просмотра исторических данных",
   "statistics.noDataInRange": "Нет данных в выбранном диапазоне",
   "statistics.noDataInRangeDescription": "Данные о трафике для выбранного периода времени не найдены. Попробуйте выбрать другой диапазон дат.",
   "statistics.showTimeRange": "Временной диапазон",
@@ -1487,5 +1499,19 @@
     "selectStatus": "Выберите статус ..."
   },
   "clearAllFilters": "Очистить все фильтры",
-  "activeFilters": "активных"
+  "activeFilters": "активных",
+  "donation": {
+    "title": "Поддержите PasarGuard",
+    "message": "Ваша поддержка помогает нам улучшать PasarGuard и создавать лучшие функции для всех!",
+    "donate": "Поддержать проект",
+    "starOnGitHub": "Поставить звезду на GitHub"
+  },
+  "goal": {
+    "currentGoal": "Текущая цель",
+    "of": "из",
+    "remaining": "Осталось",
+    "contribute": "Поддержать",
+    "completed": "Завершено",
+    "pending": "В процессе"
+  }
 }

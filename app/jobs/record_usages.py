@@ -155,13 +155,24 @@ async def get_users_stats(node: PasarGuardNode):
         params = defaultdict(int)
         for stat in filter(attrgetter("value"), stats_respons.stats):
             params[stat.name.split(".", 1)[0]] += stat.value
-        params = list({"uid": int(uid), "value": value} for uid, value in params.items())
-        return params
+
+        # Validate UIDs and filter out invalid ones
+        validated_params = []
+        for uid, value in params.items():
+            try:
+                uid_int = int(uid)
+                validated_params.append({"uid": uid_int, "value": value})
+            except (ValueError, TypeError):
+                # Skip invalid UIDs that can't be converted to int
+                logger.warning("Skipping invalid UID: %s", uid)
+                continue
+
+        return validated_params
     except NodeAPIError as e:
-        logger.error("Failed to get outbounds stats, error: %s", e.detail)
+        logger.error("Failed to get users stats, error: %s", e.detail)
         return []
     except Exception as e:
-        logger.error("Failed to get outbounds stats, unknown error: %s", e)
+        logger.error("Failed to get users stats, unknown error: %s", e)
         return []
 
 
@@ -169,7 +180,7 @@ async def get_outbounds_stats(node: PasarGuardNode):
     try:
         stats_respons = await node.get_stats(stat_type=StatType.Outbounds, reset=True, timeout=10)
         params = [
-            {"up": stat.value, "down": 0} if stat.link == "uplink" else {"up": 0, "down": stat.value}
+            {"up": stat.value, "down": 0} if stat.type == "uplink" else {"up": 0, "down": stat.value}
             for stat in filter(attrgetter("value"), stats_respons.stats)
         ]
         return params

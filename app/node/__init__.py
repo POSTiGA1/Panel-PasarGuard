@@ -1,12 +1,10 @@
-import asyncio
-
-from PasarGuardNodeBridge import PasarGuardNode, create_node, Health, NodeType
 from aiorwlock import RWLock
+from PasarGuardNodeBridge import Health, NodeType, PasarGuardNode, create_node
 
 from app.db.models import Node, NodeConnectionType, User
-from app.node.user import serialize_user_for_node, core_users, serialize_users_for_node
 from app.models.user import UserResponse
-
+from app.node.user import core_users, serialize_user_for_node, serialize_users_for_node
+from app.utils.logger import get_logger
 
 type_map = {
     NodeConnectionType.rest: NodeType.rest,
@@ -18,6 +16,7 @@ class NodeManager:
     def __init__(self):
         self._nodes: dict[int, PasarGuardNode] = {}
         self._lock = RWLock(fast=True)
+        self.logger = get_logger("node-manager")
 
     async def update_node(self, node: Node) -> PasarGuardNode:
         async with self._lock.writer_lock:
@@ -37,7 +36,9 @@ class NodeManager:
                 port=node.port,
                 server_ca=node.server_ca,
                 api_key=node.api_key,
+                name=node.name,
                 max_logs=node.max_logs,
+                logger=self.logger,
                 extra={"id": node.id, "usage_coefficient": node.usage_coefficient},
             )
 
@@ -86,25 +87,25 @@ class NodeManager:
             ]
             return nodes
 
-    async def update_user(self, user: UserResponse, inbounds: list[str] = None):
-        proto_user = serialize_user_for_node(user.id, user.username, user.proxy_settings.dict(), inbounds)
-
-        async with self._lock.reader_lock:
-            add_tasks = [node.update_user(proto_user) for node in self._nodes.values()]
-            await asyncio.gather(*add_tasks, return_exceptions=True)
-
     async def update_users(self, users: list[User]):
         proto_users = await serialize_users_for_node(users)
         async with self._lock.reader_lock:
-            add_tasks = [node.update_users(proto_users) for node in self._nodes.values()]
-            await asyncio.gather(*add_tasks, return_exceptions=True)
+            for node in self._nodes.values():
+                await node.update_users(proto_users)
+
+    async def _update_user(self, user):
+        async with self._lock.reader_lock:
+            for node in self._nodes.values():
+                self.logger.info(f"[{node.name}] sending update request")
+                await node.update_user(user)
+
+    async def update_user(self, user: UserResponse, inbounds: list[str] = None):
+        proto_user = serialize_user_for_node(user.id, user.username, user.proxy_settings.dict(), inbounds)
+        await self._update_user(proto_user)
 
     async def remove_user(self, user: UserResponse):
         proto_user = serialize_user_for_node(user.id, user.username, user.proxy_settings.dict())
-
-        async with self._lock.reader_lock:
-            remove_tasks = [node.update_user(proto_user) for node in self._nodes.values()]
-            await asyncio.gather(*remove_tasks, return_exceptions=True)
+        await self._update_user(proto_user)
 
 
 node_manager: NodeManager = NodeManager()
