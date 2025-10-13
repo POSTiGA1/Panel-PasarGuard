@@ -1,6 +1,7 @@
 import asyncio
+import random
 from collections import defaultdict
-from datetime import datetime as dt, timezone as tz
+from datetime import datetime as dt, timezone as tz, timedelta as td
 from operator import attrgetter
 
 from PasarGuardNodeBridge import PasarGuardNode, NodeAPIError
@@ -8,9 +9,11 @@ from PasarGuardNodeBridge.common.service_pb2 import StatType
 from sqlalchemy import and_, bindparam, insert, select, update
 from sqlalchemy.exc import DatabaseError, OperationalError
 from sqlalchemy.sql.expression import Insert
+from sqlalchemy.dialects.postgresql import insert as pg_insert
+from sqlalchemy.dialects.mysql import insert as mysql_insert
 
 from app import scheduler
-from app.db import AsyncSession, GetDB
+from app.db import GetDB
 from app.db.models import Admin, NodeUsage, NodeUserUsage, System, User
 from app.node import node_manager as node_manager
 from app.utils.logger import get_logger
@@ -23,44 +26,217 @@ from config import (
 logger = get_logger("record-usages")
 
 
-async def safe_execute(db: AsyncSession, stmt, params=None, max_retries: int = 3):
+async def get_dialect() -> str:
+    """Get the database dialect name without holding the session open."""
+    async with GetDB() as db:
+        return db.bind.dialect.name
+
+
+def build_node_user_usage_upsert(dialect: str, upsert_params: list[dict]):
     """
-    Safely execute database operations with deadlock and connection handling.
+    Build UPSERT statement for NodeUserUsage based on database dialect.
 
     Args:
-        db (AsyncSession): Async database session
+        dialect: Database dialect name ('postgresql', 'mysql', or 'sqlite')
+        upsert_params: List of parameter dicts with keys: uid, node_id, created_at, value
+
+    Returns:
+        tuple: (statements_list, params_list) - For SQLite returns 2 statements, others return 1
+    """
+    if dialect == "postgresql":
+        stmt = pg_insert(NodeUserUsage).values(
+            user_id=bindparam("uid"),
+            node_id=bindparam("node_id"),
+            created_at=bindparam("created_at"),
+            used_traffic=bindparam("value"),
+        )
+        stmt = stmt.on_conflict_do_update(
+            index_elements=["created_at", "user_id", "node_id"],
+            set_={"used_traffic": NodeUserUsage.used_traffic + bindparam("value")},
+        )
+        return [(stmt, upsert_params)]
+
+    elif dialect == "mysql":
+        stmt = mysql_insert(NodeUserUsage).values(
+            user_id=bindparam("uid"),
+            node_id=bindparam("node_id"),
+            created_at=bindparam("created_at"),
+            used_traffic=bindparam("value"),
+        )
+        stmt = stmt.on_duplicate_key_update(
+            used_traffic=NodeUserUsage.used_traffic + stmt.inserted.used_traffic
+        )
+        return [(stmt, upsert_params)]
+
+    else:  # SQLite
+        # Insert with OR IGNORE
+        insert_stmt = (
+            insert(NodeUserUsage)
+            .values(
+                user_id=bindparam("uid"),
+                node_id=bindparam("node_id"),
+                created_at=bindparam("created_at"),
+                used_traffic=0,
+            )
+            .prefix_with("OR IGNORE")
+        )
+
+        # Update with renamed bindparams to avoid conflicts
+        update_stmt = (
+            update(NodeUserUsage)
+            .values(used_traffic=NodeUserUsage.used_traffic + bindparam("value"))
+            .where(
+                and_(
+                    NodeUserUsage.user_id == bindparam("b_uid"),
+                    NodeUserUsage.node_id == bindparam("b_node_id"),
+                    NodeUserUsage.created_at == bindparam("b_created_at"),
+                )
+            )
+        )
+
+        # Remap params for update statement
+        update_params = [
+            {
+                "value": p["value"],
+                "b_uid": p["uid"],
+                "b_node_id": p["node_id"],
+                "b_created_at": p["created_at"],
+            }
+            for p in upsert_params
+        ]
+
+        return [(insert_stmt, upsert_params), (update_stmt, update_params)]
+
+
+def build_node_usage_upsert(dialect: str, upsert_param: dict):
+    """
+    Build UPSERT statement for NodeUsage based on database dialect.
+
+    Args:
+        dialect: Database dialect name ('postgresql', 'mysql', or 'sqlite')
+        upsert_param: Parameter dict with keys: node_id, created_at, up, down
+
+    Returns:
+        tuple: (statements_list, params_list) - For SQLite returns 2 statements, others return 1
+    """
+    if dialect == "postgresql":
+        stmt = pg_insert(NodeUsage).values(
+            node_id=bindparam("node_id"),
+            created_at=bindparam("created_at"),
+            uplink=bindparam("up"),
+            downlink=bindparam("down"),
+        )
+        stmt = stmt.on_conflict_do_update(
+            index_elements=["created_at", "node_id"],
+            set_={
+                "uplink": NodeUsage.uplink + bindparam("up"),
+                "downlink": NodeUsage.downlink + bindparam("down"),
+            },
+        )
+        return [(stmt, [upsert_param])]
+
+    elif dialect == "mysql":
+        stmt = mysql_insert(NodeUsage).values(
+            node_id=bindparam("node_id"),
+            created_at=bindparam("created_at"),
+            uplink=bindparam("up"),
+            downlink=bindparam("down"),
+        )
+        stmt = stmt.on_duplicate_key_update(
+            uplink=NodeUsage.uplink + stmt.inserted.uplink,
+            downlink=NodeUsage.downlink + stmt.inserted.downlink,
+        )
+        return [(stmt, [upsert_param])]
+
+    else:  # SQLite
+        # Insert with OR IGNORE
+        insert_stmt = (
+            insert(NodeUsage)
+            .values(
+                node_id=bindparam("node_id"),
+                created_at=bindparam("created_at"),
+                uplink=0,
+                downlink=0,
+            )
+            .prefix_with("OR IGNORE")
+        )
+
+        # Update with renamed bindparams to avoid conflicts
+        update_stmt = (
+            update(NodeUsage)
+            .values(
+                uplink=NodeUsage.uplink + bindparam("up"),
+                downlink=NodeUsage.downlink + bindparam("down"),
+            )
+            .where(
+                and_(
+                    NodeUsage.node_id == bindparam("b_node_id"),
+                    NodeUsage.created_at == bindparam("b_created_at"),
+                )
+            )
+        )
+
+        # Remap params for update statement
+        update_param = {
+            "up": upsert_param["up"],
+            "down": upsert_param["down"],
+            "b_node_id": upsert_param["node_id"],
+            "b_created_at": upsert_param["created_at"],
+        }
+
+        return [(insert_stmt, [upsert_param]), (update_stmt, [update_param])]
+
+
+async def safe_execute(stmt, params=None, max_retries: int = 5):
+    """
+    Safely execute database operations with deadlock and connection handling.
+    Creates a fresh DB session for each retry attempt to release locks.
+
+    Args:
         stmt: SQLAlchemy statement to execute
         params (list[dict], optional): Parameters for the statement
-        max_retries (int, optional): Maximum number of retry attempts
+        max_retries (int, optional): Maximum number of retry attempts (default: 5)
     """
-    dialect = db.bind.dialect.name
-
-    # MySQL-specific IGNORE prefix
-    if dialect == "mysql" and isinstance(stmt, Insert):
-        stmt = stmt.prefix_with("IGNORE")
-
     for attempt in range(max_retries):
         try:
-            await (await db.connection()).execute(stmt, params)
-            await db.commit()
-            return
-        except (OperationalError, DatabaseError) as err:
-            # Rollback the session
-            await db.rollback()
+            # Create fresh session for each attempt to release any locks from previous attempts
+            async with GetDB() as db:
+                dialect = db.bind.dialect.name
 
-            # Specific error code handling
-            if dialect == "mysql":
-                # MySQL deadlock (Error 1213)
-                if err.orig.args[0] == 1213 and attempt < max_retries - 1:
+                # MySQL-specific IGNORE prefix - but skip if using ON DUPLICATE KEY UPDATE
+                if dialect == "mysql" and isinstance(stmt, Insert):
+                    # Check if statement already has ON DUPLICATE KEY UPDATE
+                    if not hasattr(stmt, "_post_values_clause") or stmt._post_values_clause is None:
+                        stmt = stmt.prefix_with("IGNORE")
+
+                # Use raw connection to avoid ORM bulk update requirements
+                await (await db.connection()).execute(stmt, params)
+                await db.commit()
+                return  # Success - exit function
+
+        except (OperationalError, DatabaseError) as err:
+            # Session auto-closed by context manager, locks released
+
+            # Determine error type for retry logic
+            is_mysql_deadlock = (
+                hasattr(err, "orig")
+                and hasattr(err.orig, "args")
+                and len(err.orig.args) > 0
+                and err.orig.args[0] == 1213
+            )
+            is_pg_deadlock = hasattr(err, "orig") and hasattr(err.orig, "code") and err.orig.code == "40P01"
+            is_sqlite_locked = "database is locked" in str(err)
+
+            # Retry with exponential backoff if retriable error
+            if attempt < max_retries - 1:
+                if is_mysql_deadlock or is_pg_deadlock:
+                    # Exponential backoff with jitter: 50-75ms, 100-150ms, 200-300ms, 400-600ms, 800-1200ms
+                    base_delay = 0.05 * (2**attempt)
+                    jitter = random.uniform(0, base_delay * 0.5)
+                    await asyncio.sleep(base_delay + jitter)
                     continue
-            elif dialect == "postgresql":
-                # PostgreSQL deadlock (Error 40P01)
-                if err.orig.code == "40P01" and attempt < max_retries - 1:
-                    continue
-            elif dialect == "sqlite":
-                # SQLite database locked error
-                if "database is locked" in str(err) and attempt < max_retries - 1:
-                    await asyncio.sleep(0.1 * (attempt + 1))  # Exponential backoff
+                elif is_sqlite_locked:
+                    await asyncio.sleep(0.1 * (attempt + 1))  # Linear backoff
                     continue
 
             # If we've exhausted retries or it's not a retriable error, raise
@@ -69,7 +245,7 @@ async def safe_execute(db: AsyncSession, stmt, params=None, max_retries: int = 3
 
 async def record_user_stats(params: list[dict], node_id: int, usage_coefficient: int = 1):
     """
-    Record user statistics for a specific node.
+    Record user statistics for a specific node using UPSERT for efficiency.
 
     Args:
         params (list[dict]): User statistic parameters
@@ -81,45 +257,32 @@ async def record_user_stats(params: list[dict], node_id: int, usage_coefficient:
 
     created_at = dt.now(tz.utc).replace(minute=0, second=0, microsecond=0)
 
-    async with GetDB() as db:
-        # Find existing user entries for this node and time
-        select_stmt = select(NodeUserUsage.user_id).where(
-            and_(NodeUserUsage.node_id == node_id, NodeUserUsage.created_at == created_at)
-        )
-        existing_users = set((await db.execute(select_stmt)).scalars().all())
+    # Get dialect without holding session
+    dialect = await get_dialect()
 
-        # Prepare new user entries
-        new_users = [{"uid": int(p["uid"])} for p in params if int(p["uid"]) not in existing_users]
+    # Prepare parameters - ensure uid is converted to int
+    upsert_params = [
+        {
+            "uid": int(p["uid"]),
+            "value": int(p["value"] * usage_coefficient),
+            "node_id": node_id,
+            "created_at": created_at,
+        }
+        for p in params
+    ]
 
-        # Insert missing user entries
-        if new_users:
-            insert_stmt = insert(NodeUserUsage).values(
-                user_id=bindparam("uid"), created_at=created_at, node_id=node_id, used_traffic=0
-            )
-            await safe_execute(db, insert_stmt, new_users)
-
-        # Update user traffic - ensure uid is converted to int
-        update_params = [{"uid": int(p["uid"]), "value": p["value"]} for p in params]
-        update_stmt = (
-            update(NodeUserUsage)
-            .values(used_traffic=NodeUserUsage.used_traffic + bindparam("value") * usage_coefficient)
-            .where(
-                and_(
-                    NodeUserUsage.user_id == bindparam("uid"),
-                    NodeUserUsage.node_id == node_id,
-                    NodeUserUsage.created_at == created_at,
-                )
-            )
-        )
-        await safe_execute(db, update_stmt, update_params)
+    # Build and execute queries for the specific dialect
+    queries = build_node_user_usage_upsert(dialect, upsert_params)
+    for stmt, stmt_params in queries:
+        await safe_execute(stmt, stmt_params)
 
 
-async def record_node_stats(params: dict, node_id: int):
+async def record_node_stats(params: list[dict], node_id: int):
     """
-    Record node-level statistics.
+    Record node-level statistics using UPSERT for efficiency.
 
     Args:
-        params (Dict): Node statistic parameters
+        params (list[dict]): Node statistic parameters
         node_id (int): Node identifier
     """
     if not params:
@@ -127,26 +290,24 @@ async def record_node_stats(params: dict, node_id: int):
 
     created_at = dt.now(tz.utc).replace(minute=0, second=0, microsecond=0)
 
-    async with GetDB() as db:
-        # Check if node usage entry exists
-        select_stmt = select(NodeUsage.node_id).where(
-            and_(NodeUsage.node_id == node_id, NodeUsage.created_at == created_at)
-        )
-        result = await db.execute(select_stmt)
-        node_exists = result.scalar() is not None  # Correctly check if row exists
+    # Aggregate uplink and downlink from params
+    total_up = sum(p.get("up", 0) for p in params)
+    total_down = sum(p.get("down", 0) for p in params)
 
-        # Insert node usage entry if not exists
-        if not node_exists:
-            insert_stmt = insert(NodeUsage).values(created_at=created_at, node_id=node_id, uplink=0, downlink=0)
-            await safe_execute(db, insert_stmt)
+    # Get dialect without holding session
+    dialect = await get_dialect()
 
-        # Update node usage
-        update_stmt = (
-            update(NodeUsage)
-            .values(uplink=NodeUsage.uplink + bindparam("up"), downlink=NodeUsage.downlink + bindparam("down"))
-            .where(and_(NodeUsage.node_id == node_id, NodeUsage.created_at == created_at))
-        )
-        await safe_execute(db, update_stmt, params)
+    upsert_param = {
+        "node_id": node_id,
+        "created_at": created_at,
+        "up": total_up,
+        "down": total_down,
+    }
+
+    # Build and execute queries for the specific dialect
+    queries = build_node_usage_upsert(dialect, upsert_param)
+    for stmt, stmt_params in queries:
+        await safe_execute(stmt, stmt_params)
 
 
 async def get_users_stats(node: PasarGuardNode):
@@ -246,25 +407,24 @@ async def record_user_usages():
     if not users_usage:
         return
 
-    async with GetDB() as db:
-        user_stmt = (
-            update(User)
-            .where(User.id == bindparam("uid"))
-            .values(used_traffic=User.used_traffic + bindparam("value"), online_at=dt.now(tz.utc))
+    user_stmt = (
+        update(User)
+        .where(User.id == bindparam("uid"))
+        .values(used_traffic=User.used_traffic + bindparam("value"), online_at=dt.now(tz.utc))
+        .execution_options(synchronize_session=False)
+    )
+    await safe_execute(user_stmt, users_usage)
+
+    admin_usage = await calculate_admin_usage(users_usage)
+    if admin_usage:
+        admin_data = [{"admin_id": aid, "value": val} for aid, val in admin_usage.items()]
+        admin_stmt = (
+            update(Admin)
+            .where(Admin.id == bindparam("admin_id"))
+            .values(used_traffic=Admin.used_traffic + bindparam("value"))
             .execution_options(synchronize_session=False)
         )
-        await safe_execute(db, user_stmt, users_usage)
-
-        admin_usage = await calculate_admin_usage(users_usage)
-        if admin_usage:
-            admin_data = [{"admin_id": aid, "value": val} for aid, val in admin_usage.items()]
-            admin_stmt = (
-                update(Admin)
-                .where(Admin.id == bindparam("admin_id"))
-                .values(used_traffic=Admin.used_traffic + bindparam("value"))
-                .execution_options(synchronize_session=False)
-            )
-            await safe_execute(db, admin_stmt, admin_data)
+        await safe_execute(admin_stmt, admin_data)
 
     if DISABLE_RECORDING_NODE_USAGE:
         return
@@ -295,11 +455,8 @@ async def record_node_usages():
     if not (total_up or total_down):
         return
 
-    async with GetDB() as db:
-        system_update_stmt = update(System).values(
-            uplink=System.uplink + total_up, downlink=System.downlink + total_down
-        )
-        await safe_execute(db, system_update_stmt)
+    system_update_stmt = update(System).values(uplink=System.uplink + total_up, downlink=System.downlink + total_down)
+    await safe_execute(system_update_stmt)
 
     if DISABLE_RECORDING_NODE_USAGE:
         return
@@ -309,8 +466,19 @@ async def record_node_usages():
 
 
 scheduler.add_job(
-    record_user_usages, "interval", seconds=JOB_RECORD_USER_USAGES_INTERVAL, coalesce=True, max_instances=1
+    record_user_usages,
+    "interval",
+    seconds=JOB_RECORD_USER_USAGES_INTERVAL,
+    coalesce=True,
+    start_date=dt.now(tz.utc) + td(seconds=30),
+    max_instances=1,
 )
+
 scheduler.add_job(
-    record_node_usages, "interval", seconds=JOB_RECORD_NODE_USAGES_INTERVAL, coalesce=True, max_instances=1
+    record_node_usages,
+    "interval",
+    seconds=JOB_RECORD_NODE_USAGES_INTERVAL,
+    coalesce=True,
+    start_date=dt.now(tz.utc) + td(seconds=15),
+    max_instances=1,
 )

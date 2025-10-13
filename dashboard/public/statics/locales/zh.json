@@ -226,6 +226,9 @@
         "webhookUrl": "Webhook URL",
         "webhookUrlPlaceholder": "https://your-domain.com/webhook",
         "webhookUrlDescription": "Telegram 发送更新的 URL",
+        "usePanelUrl": "使用当前面板 URL",
+        "usePanelUrlDescription": "自动将当前面板 URL 插入到 webhook 字段中以便轻松设置",
+        "panelUrlApplied": "面板 URL 已应用到 webhook 字段",
         "webhookSecret": "Webhook 密钥",
         "webhookSecretPlaceholder": "输入 webhook 密钥",
         "webhookSecretDescription": "用于 webhook 安全的秘密令牌",
@@ -616,8 +619,24 @@
   "deleteUser.title": "删除用户",
   "disabled": "禁用",
   "expire": "过期",
+  "expireDate": "到期日期",
   "expired": "{{time}}已过期",
   "expires": "将在 {{time}} 后过期",
+  "sortOptions": "排序选项",
+  "sort": {
+    "username": {
+      "asc": "用户名 (A-Z)",
+      "desc": "用户名 (Z-A)"
+    },
+    "expire": {
+      "oldest": "到期日期 (最旧的优先)",
+      "newest": "到期日期 (最新的优先)"
+    },
+    "usage": {
+      "low": "数据使用量 (从低到高)",
+      "high": "数据使用量 (从高到低)"
+    }
+  },
   "header.donation": "捐赠",
   "header.hostSettings": "设置",
   "header.logout": "退出",

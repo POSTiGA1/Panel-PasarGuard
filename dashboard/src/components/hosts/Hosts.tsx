@@ -18,7 +18,7 @@ interface Brutal {
 }
 
 interface XrayMuxSettings {
-  enable?: boolean
+  enabled?: boolean
   concurrency: number | null
   xudp_concurrency: number | null
   xudp_proxy_443: string
@@ -355,7 +355,7 @@ export const HostFormSchema = z.object({
     .object({
       xray: z
         .object({
-          enable: z.boolean().optional(),
+          enabled: z.boolean().optional(),
           concurrency: z.number().nullable().optional(),
           xudp_concurrency: z.number().nullable().optional(),
           xudp_proxy_443: z.enum(['reject', 'allow', 'skip']).nullable().optional(),
@@ -364,7 +364,7 @@ export const HostFormSchema = z.object({
       sing_box: z
         .object({
           enable: z.boolean().optional(),
-          protocol: z.enum(['none', 'smux', 'yamux', 'h2mux']).optional(),
+          protocol: z.enum(['none', 'smux', 'yamux', 'h2mux']).default('smux'),
           max_connections: z.number().nullable().optional(),
           max_streams: z.number().nullable().optional(),
           min_streams: z.number().nullable().optional(),
@@ -381,7 +381,7 @@ export const HostFormSchema = z.object({
       clash: z
         .object({
           enable: z.boolean().optional(),
-          protocol: z.enum(['none', 'smux', 'yamux', 'h2mux']).optional(),
+          protocol: z.enum(['none', 'smux', 'yamux', 'h2mux']).default('smux'),
           max_connections: z.number().nullable().optional(),
           max_streams: z.number().nullable().optional(),
           min_streams: z.number().nullable().optional(),
@@ -500,7 +500,7 @@ export default function Hosts({ data, onAddHost, isDialogOpen, onSubmit, editing
         ? {
             xray: host.mux_settings.xray
               ? {
-                  enable: host.mux_settings.xray.enable ?? false,
+                  enabled: host.mux_settings.xray.enabled ?? false,
                   concurrency: host.mux_settings.xray.concurrency ?? null,
                   xudp_concurrency: host.mux_settings.xray.xudpConcurrency ?? null,
                   xudp_proxy_443: host.mux_settings.xray.xudpProxyUDP443 ?? 'reject',
@@ -509,7 +509,7 @@ export default function Hosts({ data, onAddHost, isDialogOpen, onSubmit, editing
             sing_box: host.mux_settings.sing_box
               ? {
                   enable: host.mux_settings.sing_box.enable ?? false,
-                  protocol: host.mux_settings.sing_box.protocol ?? null,
+                  protocol: host.mux_settings.sing_box.protocol ?? 'smux',
                   max_connections: host.mux_settings.sing_box.max_connections ?? null,
                   max_streams: host.mux_settings.sing_box.max_streams ?? null,
                   min_streams: host.mux_settings.sing_box.min_streams ?? null,
@@ -520,7 +520,7 @@ export default function Hosts({ data, onAddHost, isDialogOpen, onSubmit, editing
             clash: host.mux_settings.clash
               ? {
                   enable: host.mux_settings.clash.enable ?? false,
-                  protocol: host.mux_settings.clash.protocol ?? null,
+                  protocol: host.mux_settings.clash.protocol ?? 'smux',
                   max_connections: host.mux_settings.clash.max_connections ?? null,
                   max_streams: host.mux_settings.clash.max_streams ?? null,
                   min_streams: host.mux_settings.clash.min_streams ?? null,

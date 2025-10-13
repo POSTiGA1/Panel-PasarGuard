@@ -5,7 +5,7 @@ import useDirDetection from '@/hooks/use-dir-detection'
 import { UseEditFormValues } from '@/pages/_dashboard.users'
 import { useGetUsers, UserResponse } from '@/service/api'
 import { useAdmin } from '@/hooks/use-admin'
-import { getUsersPerPageLimitSize } from '@/utils/userPreferenceStorage'
+import { getUsersPerPageLimitSize, setUsersPerPageLimitSize } from '@/utils/userPreferenceStorage'
 import { useQueryClient } from '@tanstack/react-query'
 import { memo, useCallback, useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
@@ -24,6 +24,7 @@ const UsersTable = memo(() => {
   const [isEditModalOpen, setEditModalOpen] = useState(false)
   const [selectedUser, setSelectedUser] = useState<UserResponse | null>(null)
   const [isAdvanceSearchOpen, setIsAdvanceSearchOpen] = useState(false)
+  const [isSorting, setIsSorting] = useState(false)
   const { admin } = useAdmin()
   const isSudo = admin?.is_sudo || false
 
@@ -125,20 +126,58 @@ const UsersTable = memo(() => {
   // Filters will trigger new queries automatically
 
   const handleSort = useCallback(
-    (column: string) => {
+    (column: string, fromDropdown = false) => {
+      // Prevent rapid clicking
+      if (isSorting) return
+
+      setIsSorting(true)
+
       let newSort: string
 
-      if (filters.sort === column) {
-        newSort = '-' + column
-      } else if (filters.sort === '-' + column) {
-        newSort = '-created_at'
+      // Clean the column name in case it comes with prefix
+      const cleanColumn = column.startsWith('-') ? column.slice(1) : column
+
+      if (fromDropdown) {
+        // Dropdown behavior: click to sort, click again to reset
+        if (column.startsWith('-')) {
+          // Dropdown descending option clicked
+          if (filters.sort === '-' + cleanColumn) {
+            // If already descending, reset to default
+            newSort = '-created_at'
+          } else {
+            // Set to descending
+            newSort = '-' + cleanColumn
+          }
+        } else {
+          // Dropdown ascending option clicked
+          if (filters.sort === cleanColumn) {
+            // If already ascending, reset to default
+            newSort = '-created_at'
+          } else {
+            // Set to ascending
+            newSort = cleanColumn
+          }
+        }
       } else {
-        newSort = column
+        // Table column behavior: traditional 3-state cycling (asc → desc → asc)
+        if (filters.sort === cleanColumn) {
+          // If currently ascending, make it descending
+          newSort = '-' + cleanColumn
+        } else if (filters.sort === '-' + cleanColumn) {
+          // If currently descending, make it ascending
+          newSort = cleanColumn
+        } else {
+          // If different column or default, make it ascending
+          newSort = cleanColumn
+        }
       }
 
       setFilters(prev => ({ ...prev, sort: newSort }))
+
+      // Release the lock after a short delay
+      setTimeout(() => setIsSorting(false), 100)
     },
-    [filters.sort],
+    [filters.sort, isSorting],
   )
 
   const handleStatusFilter = useCallback((value: any) => {
@@ -202,6 +241,9 @@ const UsersTable = memo(() => {
     setIsChangingPage(true)
     setItemsPerPage(value)
     setCurrentPage(0) // Reset to first page when items per page changes
+    
+    // Save to localStorage
+    setUsersPerPageLimitSize(value.toString())
 
     // Remove async/await and setTimeout for instant response
     setIsChangingPage(false)
@@ -253,6 +295,7 @@ const UsersTable = memo(() => {
         advanceSearchOnOpen={setIsAdvanceSearchOpen}
         refetch={handleManualRefresh}
         advanceSearchForm={advanceSearchForm}
+        handleSort={handleSort}
         onClearAdvanceSearch={() => {
           advanceSearchForm.reset({
             is_username: true,
