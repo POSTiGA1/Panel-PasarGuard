@@ -7,9 +7,18 @@ interface Goal {
   detail: string
   price: number
   paid_amount: number
-  status: 'pending' | 'completed'
+  status: 'pending' | 'completed' | 'cancelled'
   created_at: string
   updated_at: string
+}
+
+interface GoalsResponse {
+  next_pending: Goal[]
+  last_completed: Goal[]
+  last_cancelled: Goal[]
+  pending_count: number
+  completed_count: number
+  cancelled_count: number
 }
 
 export function useCurrentGoal() {
@@ -26,4 +35,16 @@ export function useCurrentGoal() {
   })
 }
 
-
+export function useAllGoals() {
+  return useQuery({
+    queryKey: ['all-goals'],
+    queryFn: async () => {
+      const response = await $fetch<GoalsResponse>('https://donate.pasarguard.org/api/v1/goal/list', {
+        method: 'GET',
+      })
+      return response
+    },
+    refetchInterval: 300000, // Refetch every 5 minutes
+    retry: 2,
+  })
+}

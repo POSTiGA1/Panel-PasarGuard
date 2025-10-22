@@ -228,7 +228,49 @@
         "clash_meta": "Clash Meta",
         "outline": "Outline",
         "block": "Block"
-      }
+      },
+      "applications": {
+        "title": "Applications",
+        "description": "Configure client applications and download links for different platforms",
+        "addApplication": "Add Application",
+        "application": "Application",
+        "duplicateApplication": "Please fill in the existing application before adding a new one",
+        "noApplications": "No applications configured",
+        "noApplicationsDescription": "Add applications to provide download links and configuration for different platforms",
+        "loadDefaults": "Load defaults",
+        "loadedDefaults": "Defaults loaded",
+        "resetToDefault": "Reset to default",
+        "resetToDefaultSuccess": "Applications reset to defaults",
+        "name": "Application Name",
+        "namePlaceholder": "Enter application name",
+        "platform": "Platform",
+        "iconUrl": "Icon URL",
+        "iconUrlDescription": "Optional. Shown next to app name.",
+        "importUrl": "Import URL",
+        "importUrlPlaceholder": "https://example.com/config?url={url}",
+        "importUrlDescription": "URL template with {url} placeholder that will be replaced with the actual subscription URL",
+        "descriptionApp": "Description",
+        "descriptionPlaceholder": "Enter description in {{lang}}",
+        "descriptionDescription": "Multi-language descriptions for the application",
+        "recommended": "Recommended",
+        "recommendedDescription": "Mark this application as recommended for users",
+        "downloadLinks": "Download Links",
+        "addDownloadLink": "Add Link",
+        "noDownloadLinks": "No download links added",
+        "downloadLinkNamePlaceholder": "Link name",
+        "downloadLinkUrlPlaceholder": "https://example.com/download",
+        "platforms": {
+          "android": "Android",
+          "ios": "iOS",
+          "windows": "Windows",
+          "macos": "macOS",
+          "linux": "Linux",
+          "appletv": "Apple TV",
+          "androidtv": "Android TV"
+        }
+      },
+      "resetToDefault": "Reset to Default",
+      "resetToDefaultSuccess": "Subscription rules reset to default"
     },
     "telegram": {
       "title": "Telegram",
@@ -396,7 +438,7 @@
         "warning": "Warning: This will permanently delete all usage data from the selected table. This action cannot be undone.",
         "tables": {
           "nodeUserUsages": "Node User Usages",
-          "userUsages": "User Usages"
+          "nodeUsages": "Node Usages"
         }
       }
     },
@@ -603,7 +645,7 @@
   "createNewUser": "Create new user",
   "createUser": "Create User",
   "createGroup": "Create Group",
-  "dataUsage": "data usage",
+  "dataUsage": "Data Usage",
   "dateFormat": "MMMM d, yyy",
   "delete": "Remove",
   "deleteNode.deleteSuccess": "Node {{name}} removed successfully",
@@ -652,6 +694,18 @@
       "description": "Get started by creating your first user account",
       "createFirstUser": "Create your first user"
     }
+  },
+  "arrayInput": {
+    "addPlaceholder": "Type and press Enter to add...",
+    "addButton": "Add",
+    "items": "Items",
+    "noItems": "No items added yet. Type above and press Enter to add.",
+    "duplicateError": "This item already exists",
+    "editItem": "Edit item",
+    "removeItem": "Remove item",
+    "saveEdit": "Save edit",
+    "cancelEdit": "Cancel edit",
+    "clickToEdit": "Click to edit"
   },
   "hostsDialog": {
     "addHost": "Create Host",
@@ -1307,8 +1361,6 @@
     "shortIdCopied": "Short ID copied to clipboard",
     "publicKeyCopied": "Public key copied to clipboard",
     "privateKeyCopied": "Private key copied to clipboard",
-    "jsonConfig": "JSON Configuration",
-    "editJson": "Modify JSON configuration",
     "name": "Name",
     "namePlaceholder": "Enter configuration name",
     "fallback": "Fallback",
@@ -1332,7 +1384,20 @@
     "shadowsocksPasswordCopied": "Password copied to clipboard",
     "copyShadowsocksPassword": "Copy Password",
     "selectEncryptionMethod": "Select Encryption Method",
-    "regeneratePassword": "Regenerate Password"
+    "regeneratePassword": "Regenerate Password",
+    "generateVLESSEncryption": "Generate VLESS Encryption",
+    "generatingVLESSEncryption": "Generating VLESS Encryption...",
+    "vlessEncryptionGenerated": "VLESS encryption generated successfully",
+    "vlessEncryptionGenerationFailed": "Failed to generate VLESS encryption",
+    "chooseAuthentication": "Choose one Authentication to use, do not mix them. Ephemeral key exchange is Post-Quantum safe anyway.",
+    "x25519Authentication": "Authentication: X25519, not Post-Quantum",
+    "mlkem768Authentication": "Authentication: ML-KEM-768, Post-Quantum",
+    "decryption": "Decryption",
+    "encryption": "Encryption",
+    "decryptionCopied": "Decryption copied to clipboard",
+    "encryptionCopied": "Encryption copied to clipboard",
+    "copyDecryption": "Copy Decryption",
+    "copyEncryption": "Copy Encryption"
   },
   "settings.cores.title": "Cores",
   "settings.cores.description": "Manage Your Cores",
@@ -1353,9 +1418,15 @@
     "min": "{{field}} must be at least {{min}}",
     "max": "{{field}} must be at most {{max}}",
     "required": "{{field}} is required",
+    "url": "Please enter a valid URL",
     "invalid_type": "{{field}} is required",
     "too_small": "{{field}} is too short",
-    "too_big": "{{field}} is too long"
+    "too_big": "{{field}} is too long",
+    "minLength": "String must contain at least 3 character(s)",
+    "maxLength": "String must contain at most 32 character(s)",
+    "formHasErrors": "Please fix the form errors before submitting",
+    "formInvalid": "Form is invalid. Please check all required fields.",
+    "missingFields": "Please fill in the required fields: {{fields}}"
   },
   "fields": {
     "username": "Username",
@@ -1404,6 +1475,10 @@
   "statistics.totalUsage": "Total Usage",
   "statistics.uplink": "Uplink",
   "statistics.downlink": "Downlink",
+  "statistics.nodeStats": "Node Statistics",
+  "statistics.nodeStatsDescription": "Detailed traffic statistics for each node at this time period. Click on bars in the chart to view more details.",
+  "statistics.clickForDetails": "Click for details",
+  "statistics.clickForMore": "Click for more details",
   "errors.connectionFailed": "Connection failed. Please check your network and try again.",
   "errors.statisticsLoadFailed": "Failed to Load Statistics",
   "usersTable.resetUsageTitle": "Reset User Usage",

@@ -206,7 +206,48 @@
         "clash_meta": "Clash Meta",
         "outline": "Outline",
         "block": "阻止"
-      }
+      },
+      "applications": {
+        "title": "应用程序",
+        "description": "配置客户端应用程序和不同平台的下载链接",
+        "addApplication": "添加应用程序",
+        "application": "应用程序",
+        "duplicateApplication": "请先填写现有应用程序再添加新应用程序",
+        "noApplications": "未配置应用程序",
+        "noApplicationsDescription": "添加应用程序以为不同平台提供下载链接和配置",
+        "loadDefaults": "加载默认",
+        "loadedDefaults": "默认项已加载",
+        "resetToDefault": "重置为默认",
+        "resetToDefaultSuccess": "应用程序已重置为默认",
+        "name": "应用程序名称",
+        "namePlaceholder": "输入应用程序名称",
+        "platform": "平台",
+        "iconUrl": "图标 URL",
+        "iconUrlDescription": "可选。显示在应用名称旁边。",
+        "importUrl": "导入链接",
+        "importUrlPlaceholder": "https://example.com/config?url={url}",
+        "importUrlDescription": "包含{url}占位符的URL模板，将被实际订阅URL替换",
+        "descriptionApp": "描述",
+        "descriptionPlaceholder": "用{{lang}}输入描述",
+        "recommended": "推荐",
+        "recommendedDescription": "将此应用程序标记为用户推荐",
+        "downloadLinks": "下载链接",
+        "addDownloadLink": "添加链接",
+        "noDownloadLinks": "未添加下载链接",
+        "downloadLinkNamePlaceholder": "链接名称",
+        "downloadLinkUrlPlaceholder": "https://example.com/download",
+        "platforms": {
+          "android": "Android",
+          "ios": "iOS",
+          "windows": "Windows",
+          "macos": "macOS",
+          "linux": "Linux",
+          "appletv": "Apple TV",
+          "androidtv": "Android TV"
+        }
+      },
+      "resetToDefault": "重置为默认",
+      "resetToDefaultSuccess": "订阅规则已重置为默认"
     },
     "telegram": {
       "title": "Telegram",
@@ -377,7 +418,7 @@
         "warning": "警告：此操作将永久删除所选表中的所有使用数据。此操作无法撤销。",
         "tables": {
           "nodeUserUsages": "节点用户使用情况",
-          "userUsages": "用户使用情况"
+          "nodeUsages": "节点使用情况"
         }
       }
     },
@@ -884,6 +925,18 @@
   "statistics.selectTimeRange": "选择时间范围",
   "statistics.selectTimeRangeDescription": "选择用于历史数据分析的时间段",
   "statistics.selectTimeRangeToView": "请选择一个时间范围来查看历史数据",
+  "arrayInput": {
+    "addPlaceholder": "输入并按回车键添加...",
+    "addButton": "添加",
+    "items": "项目",
+    "noItems": "尚未添加项目。请在上方输入并按回车键。",
+    "duplicateError": "此项目已存在",
+    "editItem": "编辑项目",
+    "removeItem": "删除项目",
+    "saveEdit": "保存编辑",
+    "cancelEdit": "取消编辑",
+    "clickToEdit": "点击编辑"
+  },
   "hostsDialog": {
     "addHost": "添加主机",
     "selectInbound": "选择入站",
@@ -1289,8 +1342,6 @@
     "shortIdCopied": "短 ID 已复制到剪贴板",
     "publicKeyCopied": "公钥已复制到剪贴板",
     "privateKeyCopied": "私钥已复制到剪贴板",
-    "jsonConfig": "JSON 配置",
-    "editJson": "编辑 JSON 配置",
     "name": "名称",
     "namePlaceholder": "输入配置名称",
     "fallback": "备用项",
@@ -1314,7 +1365,20 @@
     "shadowsocksPasswordCopied": "密码已复制到剪贴板",
     "copyShadowsocksPassword": "复制密码",
     "selectEncryptionMethod": "选择加密方法",
-    "regeneratePassword": "重新生成密码"
+    "regeneratePassword": "重新生成密码",
+    "generateVLESSEncryption": "生成 VLESS 加密",
+    "generatingVLESSEncryption": "正在生成 VLESS 加密...",
+    "vlessEncryptionGenerated": "VLESS 加密生成成功",
+    "vlessEncryptionGenerationFailed": "VLESS 加密生成失败",
+    "chooseAuthentication": "选择一种身份验证方法使用，不要混合使用。临时密钥交换无论如何都是 Post-Quantum 安全的。",
+    "x25519Authentication": "身份验证：X25519，非 Post-Quantum",
+    "mlkem768Authentication": "身份验证：ML-KEM-768，Post-Quantum",
+    "decryption": "解密",
+    "encryption": "加密",
+    "decryptionCopied": "解密已复制到剪贴板",
+    "encryptionCopied": "加密已复制到剪贴板",
+    "copyDecryption": "复制解密",
+    "copyEncryption": "复制加密"
   },
   "settings.cores.title": "核心",
   "settings.cores.description": "管理您的核心",
@@ -1545,6 +1609,10 @@
   "statistics.totalUsage": "总用量",
   "statistics.uplink": "上行",
   "statistics.downlink": "下行",
+  "statistics.nodeStats": "节点统计",
+  "statistics.nodeStatsDescription": "此时间段内每个节点的详细流量统计。点击图表中的柱状图查看更多详情。",
+  "statistics.clickForDetails": "点击查看详情",
+  "statistics.clickForMore": "点击查看更多详情",
   "timeSelector.pickDate": "选择日期",
   "advanceSearch": {
     "title": "高级搜索",
@@ -1572,5 +1640,20 @@
     "contribute": "贡献",
     "completed": "已完成",
     "pending": "进行中"
+  },
+  "validation": {
+    "generic": "{{field}} 无效",
+    "min": "{{field}} 必须至少为 {{min}}",
+    "max": "{{field}} 最多为 {{max}}",
+    "required": "{{field}} 是必需的",
+    "url": "请输入有效的 URL",
+    "invalid_type": "{{field}} 是必需的",
+    "too_small": "{{field}} 太短",
+    "too_big": "{{field}} 太长",
+    "minLength": "字符串必须至少包含 3 个字符",
+    "maxLength": "字符串最多包含 32 个字符",
+    "formHasErrors": "请在提交前修复表单错误",
+    "formInvalid": "表单无效。请检查所有必填字段。",
+    "missingFields": "请填写必填字段：{{fields}}"
   }
 }

@@ -7,6 +7,7 @@ import { NavUser } from '@/components/nav-user'
 import { useTheme } from '@/components/theme-provider'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarRail, SidebarTrigger, useSidebar } from '@/components/ui/sidebar'
+import { Link } from 'react-router'
 import { DISCUSSION_GROUP, DOCUMENTATION, DONATION_URL, REPO_URL } from '@/constants/Project'
 import { useAdmin } from '@/hooks/use-admin'
 import useDirDetection from '@/hooks/use-dir-detection'
@@ -303,7 +304,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <>
       <div className="sticky top-0 z-30 flex items-center justify-between border-b border-sidebar-border bg-neutral-200/75 px-4 py-3 backdrop-blur dark:bg-neutral-900/75 lg:hidden">
-        <div className="flex items-center gap-2">
+        <Link to='/' className="flex items-center gap-2">
           <img
             src={resolvedTheme === 'dark' ? window.location.pathname + 'statics/favicon/logo.png' : window.location.pathname + 'statics/favicon/logo-dark.png'}
             alt="PasarGuard Logo"
@@ -312,7 +313,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <span dir={isRTL ? 'rtl' : 'ltr'} className="text-sm font-bold">
             {t('pasarguard')}
           </span>
-        </div>
+        </Link>
         <SidebarTrigger />
       </div>
       <Sidebar variant="sidebar" {...props} className="border-sidebar-border p-0" side={isRTL ? 'right' : 'left'}>

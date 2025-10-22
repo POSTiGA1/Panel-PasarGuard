@@ -135,7 +135,48 @@
         "clash_meta": "Clash Meta",
         "outline": "Outline",
         "block": "بلاک"
-      }
+      },
+      "applications": {
+        "title": "برنامه‌ها",
+        "description": "پیکربندی برنامه‌های کلاینت و لینک‌های دانلود برای پلتفرم‌های مختلف",
+        "addApplication": "افزودن برنامه",
+        "application": "برنامه",
+        "duplicateApplication": "لطفاً ابتدا برنامه موجود را تکمیل کنید",
+        "noApplications": "هیچ برنامه‌ای پیکربندی نشده است",
+        "noApplicationsDescription": "برنامه‌ها را اضافه کنید تا لینک‌های دانلود و پیکربندی برای پلتفرم‌های مختلف ارائه دهید",
+        "loadDefaults": "بارگذاری پیش‌فرض‌ها",
+        "loadedDefaults": "پیش‌فرض‌ها بارگذاری شد",
+        "resetToDefault": "بازنشانی به پیش‌فرض",
+        "resetToDefaultSuccess": "برنامه‌ها به مقادیر پیش‌فرض بازنشانی شدند",
+        "name": "نام برنامه",
+        "namePlaceholder": "نام برنامه را وارد کنید",
+        "platform": "پلتفرم",
+        "iconUrl": "آدرس آیکن",
+        "iconUrlDescription": "اختیاری. کنار نام برنامه نمایش داده می‌شود.",
+        "importUrl": "آدرس وارد کردن",
+        "importUrlPlaceholder": "https://example.com/config?url={url}",
+        "importUrlDescription": "قالب URL با متغیر {url} که با آدرس اشتراک واقعی جایگزین می‌شود",
+        "descriptionApp": "توضیحات",
+        "descriptionPlaceholder": "توضیحات را به {{lang}} وارد کنید",
+        "recommended": "توصیه شده",
+        "recommendedDescription": "این برنامه را به عنوان توصیه شده برای کاربران علامت‌گذاری کنید",
+        "downloadLinks": "لینک‌های دانلود",
+        "addDownloadLink": "افزودن لینک",
+        "noDownloadLinks": "هیچ لینک دانلودی اضافه نشده است",
+        "downloadLinkNamePlaceholder": "نام لینک",
+        "downloadLinkUrlPlaceholder": "https://example.com/download",
+        "platforms": {
+          "android": "اندروید",
+          "ios": "iOS",
+          "windows": "ویندوز",
+          "macos": "macOS",
+          "linux": "لینوکس",
+          "appletv": "Apple TV",
+          "androidtv": "Android TV"
+        }
+      },
+      "resetToDefault": "بازگشت به پیش‌فرض",
+      "resetToDefaultSuccess": "قوانین اشتراک به پیش‌فرض بازنشانی شد"
     },
     "telegram": {
       "title": "تلگرام",
@@ -303,7 +344,7 @@
         "warning": "هشدار: این عمل تمام داده‌های مصرف را از جدول انتخاب شده به طور دائمی حذف می‌کند. این عمل قابل بازگشت نیست.",
         "tables": {
           "nodeUserUsages": "مصرف کاربران گره",
-          "userUsages": "مصرف کاربران"
+          "nodeUsages": "مصرف گره"
         }
       }
     },
@@ -532,6 +573,18 @@
   "header.logout": "خروج",
   "header.nodeSettings": "تنظیمات گره‌ها",
   "header.nodesUsage": "نمودار گره‌ها",
+  "arrayInput": {
+    "addPlaceholder": "تایپ کنید و Enter بزنید تا اضافه شود...",
+    "addButton": "افزودن",
+    "items": "آیتم‌ها",
+    "noItems": "هنوز آیتمی اضافه نشده. در بالا تایپ کنید و Enter بزنید.",
+    "duplicateError": "این آیتم قبلاً وجود دارد",
+    "editItem": "ویرایش آیتم",
+    "removeItem": "حذف آیتم",
+    "saveEdit": "ذخیره ویرایش",
+    "cancelEdit": "لغو ویرایش",
+    "clickToEdit": "برای ویرایش کلیک کنید"
+  },
   "hostsDialog": {
     "addHost": "افزودن هاست",
     "loading": "در حال بارگذاری...",
@@ -1227,8 +1280,6 @@
     "shortIdCopied": "شناسه کوتاه در کلیپ‌بورد کپی شد",
     "publicKeyCopied": "کلید عمومی در کلیپ‌بورد کپی شد",
     "privateKeyCopied": "کلید خصوصی در کلیپ‌بورد کپی شد",
-    "jsonConfig": "پیکربندی JSON",
-    "editJson": "ویرایش پیکربندی JSON",
     "name": "نام",
     "namePlaceholder": "نام پیکربندی را وارد کنید",
     "fallback": "پشتیبان",
@@ -1252,7 +1303,20 @@
     "shadowsocksPasswordCopied": "رمز عبور در کلیپ‌بورد کپی شد",
     "copyShadowsocksPassword": "کپی رمز عبور",
     "selectEncryptionMethod": "انتخاب روش رمزنگاری",
-    "regeneratePassword": "تولید مجدد رمز عبور"
+    "regeneratePassword": "تولید مجدد رمز عبور",
+    "generateVLESSEncryption": "تولید رمزنگاری VLESS",
+    "generatingVLESSEncryption": "در حال تولید رمزنگاری VLESS...",
+    "vlessEncryptionGenerated": "رمزنگاری VLESS با موفقیت تولید شد",
+    "vlessEncryptionGenerationFailed": "خطا در تولید رمزنگاری VLESS",
+    "chooseAuthentication": "یکی از روش‌های احراز هویت را انتخاب کنید، آن‌ها را با هم مخلوط نکنید. تبادل کلید موقت در هر صورت Post-Quantum امن است.",
+    "x25519Authentication": "احراز هویت: X25519، غیر Post-Quantum",
+    "mlkem768Authentication": "احراز هویت: ML-KEM-768، Post-Quantum",
+    "decryption": "رمزگشایی",
+    "encryption": "رمزنگاری",
+    "decryptionCopied": "رمزگشایی در کلیپ‌بورد کپی شد",
+    "encryptionCopied": "رمزنگاری در کلیپ‌بورد کپی شد",
+    "copyDecryption": "کپی رمزگشایی",
+    "copyEncryption": "کپی رمزنگاری"
   },
   "settings.cores.title": "هسته‌ها",
   "settings.cores.description": "مدیریت هسته‌های شما",
@@ -1278,9 +1342,15 @@
     "min": "{{field}} باید حداقل {{min}} باشد",
     "max": "{{field}} باید حداکثر {{max}} باشد",
     "required": "وارد کردن {{field}} الزامی است",
+    "url": "لطفاً یک نشانی اینترنتی معتبر وارد کنید",
     "invalid_type": "وارد کردن {{field}} الزامی است",
     "too_small": "{{field}} خیلی کوتاه است",
-    "too_big": "{{field}} خیلی بلند است"
+    "too_big": "{{field}} خیلی بلند است",
+    "minLength": "رشته باید حداقل ۳ کاراکتر داشته باشد",
+    "maxLength": "رشته باید حداکثر ۳۲ کاراکتر داشته باشد",
+    "formHasErrors": "لطفاً خطاهای فرم را قبل از ارسال برطرف کنید",
+    "formInvalid": "فرم نامعتبر است. لطفاً تمام فیلدهای الزامی را بررسی کنید.",
+    "missingFields": "لطفاً فیلدهای الزامی زیر را پر کنید: {{fields}}"
   },
   "fields": {
     "username": "نام کاربری",
@@ -1496,6 +1566,10 @@
   "statistics.totalUsage": "مصرف کل",
   "statistics.uplink": "ارسال",
   "statistics.downlink": "دریافت",
+  "statistics.nodeStats": "آمار گره‌ها",
+  "statistics.nodeStatsDescription": "آمار دقیق ترافیک هر گره در این بازه زمانی. روی میله‌های نمودار کلیک کنید تا جزئیات بیشتری ببینید.",
+  "statistics.clickForDetails": "برای جزئیات کلیک کنید",
+  "statistics.clickForMore": "برای جزئیات بیشتر کلیک کنید",
   "timeSelector.pickDate": "انتخاب تاریخ",
   "advanceSearch": {
     "title": "جستجوی پیشرفته",
