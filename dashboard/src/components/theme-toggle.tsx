@@ -1,6 +1,8 @@
 import { Theme, useTheme } from '@/components/theme-provider'
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { useSidebar } from '@/components/ui/sidebar'
 import { Monitor, Moon, Sun } from 'lucide-react'
 import { useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -8,6 +10,18 @@ import { useTranslation } from 'react-i18next'
 export function ThemeToggle() {
   const { setTheme } = useTheme()
   const { t } = useTranslation()
+  
+  // Safely get sidebar state, defaulting to 'expanded' if not available
+  let sidebarState: 'expanded' | 'collapsed' = 'expanded'
+  let isMobile = false
+  try {
+    const { state, isMobile: mobileFlag } = useSidebar()
+    sidebarState = state
+    isMobile = mobileFlag
+  } catch (error) {
+    // useSidebar is not available, use default state
+    console.warn('useSidebar not available, using default expanded state')
+  }
 
   const toggleTheme = useCallback(
     (theme: Theme) => {
@@ -16,6 +30,55 @@ export function ThemeToggle() {
     [setTheme],
   )
 
+  // Collapsed state (desktop only) - icon with popover
+  // On mobile, always use expanded UI since there's no collapsed sidebar concept
+  if (sidebarState === 'collapsed' && !isMobile) {
+    return (
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button variant="outline" size="icon" className="h-8 w-8 transition-colors duration-200">
+            <Sun className="transition-all duration-300 ease-in-out dark:hidden" />
+            <Moon className="hidden transition-all duration-300 ease-in-out dark:block" />
+            <span className="sr-only">{t('theme.toggle')}</span>
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-48 p-2" side="right" align="start">
+          <div className="space-y-1">
+            <div className="px-2 py-1.5 text-sm font-semibold">{t('theme.title', { defaultValue: 'Theme' })}</div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full justify-start"
+              onClick={() => toggleTheme('light')}
+            >
+              <Sun className="mr-2 h-4 w-4" />
+              {t('theme.light')}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full justify-start"
+              onClick={() => toggleTheme('dark')}
+            >
+              <Moon className="mr-2 h-4 w-4" />
+              {t('theme.dark')}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full justify-start"
+              onClick={() => toggleTheme('system')}
+            >
+              <Monitor className="mr-2 h-4 w-4" />
+              {t('theme.system')}
+            </Button>
+          </div>
+        </PopoverContent>
+      </Popover>
+    )
+  }
+
+  // Expanded state - dropdown
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>

@@ -46,7 +46,7 @@ const UsersTable = memo(() => {
       group: [],
       status: '0',
     },
-  })
+  }) as any
 
   // Create form for user editing
   const userForm = useForm<UseEditFormValues>({
@@ -159,13 +159,13 @@ const UsersTable = memo(() => {
           }
         }
       } else {
-        // Table column behavior: traditional 3-state cycling (asc → desc → asc)
+        // Table column behavior: 3-state cycling (asc → desc → no sort)
         if (filters.sort === cleanColumn) {
           // If currently ascending, make it descending
           newSort = '-' + cleanColumn
         } else if (filters.sort === '-' + cleanColumn) {
-          // If currently descending, make it ascending
-          newSort = cleanColumn
+          // If currently descending, remove sort (third state: no sort)
+          newSort = '-created_at'
         } else {
           // If different column or default, make it ascending
           newSort = cleanColumn
@@ -250,7 +250,6 @@ const UsersTable = memo(() => {
   }
 
   const handleEdit = (user: UserResponse) => {
-    console.log(user)
     setSelectedUser(user)
     setEditModalOpen(true)
   }

@@ -9,7 +9,7 @@ import { AdminStatusBadge } from '@/components/AdminStatusBadge'
 interface ColumnSetupProps {
   t: (key: string) => string
   handleSort: (column: string) => void
-  filters: { sort: string }
+  filters: { sort?: string }
   onEdit: (admin: AdminDetails) => void
   onDelete: (admin: AdminDetails) => void
   toggleStatus: (admin: AdminDetails) => void
@@ -22,16 +22,28 @@ const createSortButton = (
   t: (key: string) => string,
   handleSort: (column: string) => void,
   filters: {
-    sort: string
+    sort?: string
   },
-) => (
-  <button onClick={handleSort.bind(null, column)} className="flex w-full items-center gap-1 py-1">
-    <div className="text-xs">{t(label)}</div>
-    {filters.sort && (filters.sort === column || filters.sort === '-' + column) && (
-      <ChevronDown size={16} className={`transition-transform duration-300 ${filters.sort === column ? 'rotate-180' : ''} ${filters.sort === '-' + column ? 'rotate-0' : ''} `} />
-    )}
-  </button>
-)
+) => {
+  const handleClick = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    console.log('Sorting by column:', column)
+    handleSort(column)
+  }
+  
+  return (
+    <button 
+      onClick={handleClick}
+      className="flex w-full items-center gap-1 py-1"
+    >
+      <div className="text-xs">{t(label)}</div>
+      {filters.sort && (filters.sort === column || filters.sort === '-' + column) && (
+        <ChevronDown size={16} className={`transition-transform duration-300 ${filters.sort === column ? 'rotate-180' : ''} ${filters.sort === '-' + column ? 'rotate-0' : ''} `} />
+      )}
+    </button>
+  )
+}
 
 export const setupColumns = ({ t, handleSort, filters, onEdit, onDelete, toggleStatus, onResetUsage }: ColumnSetupProps): ColumnDef<AdminDetails>[] => [
   {
@@ -39,7 +51,7 @@ export const setupColumns = ({ t, handleSort, filters, onEdit, onDelete, toggleS
     header: () => createSortButton('username', 'username', t, handleSort, filters),
     cell: ({ row }) => (
       <div className="overflow-hidden text-ellipsis whitespace-nowrap pl-1 font-medium md:pl-2">
-        <div className="flex items-start gap-x-3 px-1 py-1">
+        <div className="flex items-start gap-x-3 py-1 md:px-1">
           <div className="pt-1">
             {row.original.is_disabled ? (
               <div className="min-h-[10px] min-w-[10px] rounded-full border border-gray-400 shadow-sm dark:border-gray-600" />
@@ -60,21 +72,21 @@ export const setupColumns = ({ t, handleSort, filters, onEdit, onDelete, toggleS
     cell: ({ row }) => {
       const traffic = row.getValue('used_traffic') as number | null
       return (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 whitespace-nowrap">
           <ChartPie className="hidden h-4 w-4 sm:block" />
-          <span dir="ltr">{traffic ? formatBytes(traffic) : '0 B'}</span>
+          <span dir="ltr" className="text-xs">{traffic ? formatBytes(traffic) : '0 B'}</span>
         </div>
       )
     },
   },
   {
     accessorKey: 'lifetime_used_traffic',
-    header: () => createSortButton('lifetime_used_traffic', 'admins.lifetime.used.traffic', t, handleSort, filters),
+    header: () => <div className="flex items-center text-xs capitalize">{t('admins.lifetime.used.traffic')}</div>,
     cell: ({ row }) => {
       const total = row.getValue('lifetime_used_traffic') as number | null
       return (
-        <div className="flex items-center gap-2">
-          <span dir="ltr">{formatBytes(total || 0)}</span>
+        <div className="flex items-center gap-2 whitespace-nowrap">
+          <span dir="ltr" className="text-xs">{formatBytes(total || 0)}</span>
         </div>
       )
     },
@@ -94,7 +106,7 @@ export const setupColumns = ({ t, handleSort, filters, onEdit, onDelete, toggleS
   },
   {
     accessorKey: 'total_users',
-    header: () => createSortButton('total_users', 'admins.total.users', t, handleSort, filters),
+    header: () => <div className="flex items-center text-xs capitalize">{t('admins.total.users')}</div>,
     cell: ({ row }) => (
       <div className="flex items-center gap-2">
         <User className="h-4 w-4" />

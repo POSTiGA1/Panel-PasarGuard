@@ -1,4 +1,4 @@
-import { SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar'
+import { SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from '@/components/ui/sidebar'
 import { type LucideIcon } from 'lucide-react'
 import * as React from 'react'
 import { useTranslation } from 'react-i18next'
@@ -17,6 +17,29 @@ export function NavSecondary({
   }[]
 } & React.ComponentPropsWithoutRef<typeof SidebarGroup>) {
   const { t } = useTranslation()
+  const { state, isMobile } = useSidebar()
+
+  // Collapsed state (desktop only) - show only icons as direct links
+  // On mobile, always use expanded UI since there's no collapsed sidebar concept
+  if (state === 'collapsed' && !isMobile) {
+    return (
+      <SidebarGroup {...props}>
+        <SidebarMenu>
+          {items.map(item => (
+            <SidebarMenuItem key={item.title}>
+              <SidebarMenuButton asChild tooltip={t(item.title)}>
+                <a href={item.url} target={item.target}>
+                  <item.icon />
+                </a>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          ))}
+        </SidebarMenu>
+      </SidebarGroup>
+    )
+  }
+
+  // Expanded state - full sidebar group
   return (
     <SidebarGroup {...props}>
       {!!label && <SidebarGroupLabel>{t(label)}</SidebarGroupLabel>}

@@ -3,6 +3,8 @@ import { useGetUserTemplates, useModifyUserTemplate, UserTemplateResponse, Shado
 import PageHeader from '@/components/page-header.tsx'
 import { Plus } from 'lucide-react'
 import { Separator } from '@/components/ui/separator.tsx'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Card } from '@/components/ui/card'
 
 import UserTemplateModal, { userTemplateFormSchema, UserTemplatesFromValue } from '@/components/dialogs/UserTemplateModal.tsx'
 import { useState } from 'react'
@@ -29,7 +31,7 @@ const initialDefaultValues: Partial<UserTemplatesFromValue> = {
 export default function UserTemplates() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingUserTemplate, setEditingUserTemplate] = useState<UserTemplateResponse | null>(null)
-  const { data: userTemplates } = useGetUserTemplates()
+  const { data: userTemplates, isLoading } = useGetUserTemplates()
   const form = useForm<UserTemplatesFromValue>({
     resolver: zodResolver(userTemplateFormSchema),
   })
@@ -116,9 +118,27 @@ export default function UserTemplates() {
           className="mb-12 grid transform-gpu animate-slide-up grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3"
           style={{ animationDuration: '500ms', animationDelay: '100ms', animationFillMode: 'both' }}
         >
-          {userTemplates?.map((template: UserTemplateResponse) => (
-            <UserTemplate onEdit={handleEdit} template={template} key={template.id} onToggleStatus={handleToggleStatus} />
-          ))}
+          {isLoading ? (
+            [...Array(6)].map((_, i) => (
+              <Card key={i} className="px-4 py-5 sm:px-5 sm:py-6">
+                <div className="flex items-start justify-between gap-2 sm:gap-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-x-2">
+                      <Skeleton className="h-2 w-2 shrink-0 rounded-full" />
+                      <Skeleton className="h-5 w-24 sm:w-32" />
+                    </div>
+                    <div className="mt-2 space-y-2">
+                      <Skeleton className="h-4 w-32 sm:w-40 md:w-48" />
+                      <Skeleton className="h-4 w-28 sm:w-36 md:w-40" />
+                    </div>
+                  </div>
+                  <Skeleton className="h-8 w-8 shrink-0" />
+                </div>
+              </Card>
+            ))
+          ) : (
+            userTemplates?.map((template: UserTemplateResponse) => <UserTemplate onEdit={handleEdit} template={template} key={template.id} onToggleStatus={handleToggleStatus} />)
+          )}
         </div>
       </div>
 
