@@ -11,7 +11,7 @@ from app.models.settings import Application, ConfigFormat, SubRule, Subscription
 from app.models.stats import Period, UserUsageStatsList
 from app.models.user import SubscriptionUserResponse, UsersResponseWithInbounds
 from app.settings import subscription_settings
-from app.subscription.share import encode_title, generate_subscription
+from app.subscription.share import encode_title, generate_subscription, setup_format_variables
 from app.templates import render_template
 from config import SUBSCRIPTION_PAGE_TEMPLATE
 
@@ -46,26 +46,48 @@ class SubscriptionOperation(BaseOperation):
                 return rule.target
 
     @staticmethod
+    def _format_profile_title(
+        user: UsersResponseWithInbounds, format_variables: dict, sub_settings: SubSettings
+    ) -> str:
+        """Format profile title with dynamic variables, falling back to default if needed."""
+        # Prefer admin's profile_title over subscription settings
+        profile_title = (
+            getattr(user.admin, "profile_title", None) if user.admin else None
+        ) or sub_settings.profile_title
+
+        if not profile_title:
+            return "Subscription"
+
+        try:
+            return profile_title.format_map(format_variables)
+        except (ValueError, KeyError):
+            # Invalid format string, return original title
+            return profile_title
+
+    @staticmethod
     def create_response_headers(user: UsersResponseWithInbounds, request_url: str, sub_settings: SubSettings) -> dict:
         """Create response headers for subscription responses, including user subscription info."""
         # Generate user subscription info
-        user_info = {"upload": 0, "download": user.used_traffic}
+        user_info = {"upload": 0, "download": user.used_traffic, "expire": 0}
 
         if user.data_limit:
             user_info["total"] = user.data_limit
+
         if user.expire:
             user_info["expire"] = int(user.expire.timestamp())
 
-        # Create and return headers
+        # Format profile title with dynamic variables
+        format_variables = setup_format_variables(user)
+        formatted_title = SubscriptionOperation._format_profile_title(user, format_variables, sub_settings)
+
+        # Prefer admin's support_url over subscription settings
+        support_url = (getattr(user.admin, "support_url", None) if user.admin else None) or sub_settings.support_url
+
         return {
             "content-disposition": f'attachment; filename="{user.username}"',
             "profile-web-page-url": request_url,
-            "support-url": user.admin.support_url
-            if user.admin and user.admin.support_url
-            else sub_settings.support_url,
-            "profile-title": encode_title(user.admin.profile_title)
-            if user.admin and user.admin.profile_title
-            else encode_title(sub_settings.profile_title),
+            "support-url": support_url,
+            "profile-title": encode_title(formatted_title),
             "profile-update-interval": str(sub_settings.update_interval),
             "subscription-userinfo": "; ".join(f"{key}={val}" for key, val in user_info.items()),
         }
@@ -96,9 +118,9 @@ class SubscriptionOperation(BaseOperation):
         # Handle HTML request (subscription page)
         sub_settings: SubSettings = await subscription_settings()
         db_user = await self.get_validated_sub(db, token)
-        response_headers = self.create_response_headers(db_user, request_url, sub_settings)
-
         user = await self.validated_user(db_user)
+
+        response_headers = self.create_response_headers(user, request_url, sub_settings)
 
         if "text/html" in accept_header:
             template = (
@@ -139,9 +161,9 @@ class SubscriptionOperation(BaseOperation):
         if client_type == ConfigFormat.block or not getattr(sub_settings.manual_sub_request, client_type):
             await self.raise_error(message="Client not supported", code=406)
         db_user = await self.get_validated_sub(db, token=token)
-        response_headers = self.create_response_headers(db_user, request_url, sub_settings)
-
         user = await self.validated_user(db_user)
+
+        response_headers = self.create_response_headers(user, request_url, sub_settings)
         conf, media_type = await self.fetch_config(user, client_type)
 
         # Create response headers

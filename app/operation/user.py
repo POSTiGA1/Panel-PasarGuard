@@ -87,9 +87,9 @@ class UserOperation(BaseOperation):
 
         if db_user.status in (UserStatus.active, UserStatus.on_hold):
             user_inbounds = await db_user.inbounds()
-            await node_manager.update_user(user, inbounds=user_inbounds)
+            asyncio.create_task(node_manager.update_user(user, inbounds=user_inbounds))
         else:
-            await node_manager.remove_user(user)
+            asyncio.create_task(node_manager.update_user(user))
 
         return user
 
@@ -369,8 +369,8 @@ class UserOperation(BaseOperation):
         self,
         db: AsyncSession,
         admin: AdminDetails,
-        expired_after: dt = None,
-        expired_before: dt = None,
+        expired_after: dt | None = None,
+        expired_before: dt | None = None,
         admin_username: str = None,
     ) -> RemoveUsersResponse:
         """
@@ -382,6 +382,7 @@ class UserOperation(BaseOperation):
         """
 
         expired_after, expired_before = await self.validate_dates(expired_after, expired_before)
+
         if admin_username:
             admin_id = (await self.get_validated_admin(db, admin_username)).id
         else:
@@ -390,7 +391,7 @@ class UserOperation(BaseOperation):
         await remove_users(db, users)
 
         username_list = [row.username for row in users]
-        self.remove_users_logger(users=username_list, by=admin.username)
+        await self.remove_users_logger(users=username_list, by=admin.username)
 
         return RemoveUsersResponse(users=username_list, count=len(username_list))
 

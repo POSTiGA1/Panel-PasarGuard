@@ -3,7 +3,7 @@
  * Do not edit manually.
  * PasarGuardAPI
  * Unified GUI Censorship Resistant Solution
- * OpenAPI spec version: 1.3.1
+ * OpenAPI spec version: 1.4.1
  */
 import { useMutation, useQuery } from '@tanstack/react-query'
 import type {
@@ -227,7 +227,7 @@ export type XMuxSettingsOutputHKeepAlivePeriod = number | null
 
 export type XMuxSettingsOutputHMaxRequestTimes = string | null
 
-export type XMuxSettingsOutputCMaxLifetime = string | null
+export type XMuxSettingsOutputHMaxReusableSecs = string | null
 
 export type XMuxSettingsOutputCMaxReuseTimes = string | null
 
@@ -239,7 +239,7 @@ export interface XMuxSettingsOutput {
   maxConcurrency?: XMuxSettingsOutputMaxConcurrency
   maxConnections?: XMuxSettingsOutputMaxConnections
   cMaxReuseTimes?: XMuxSettingsOutputCMaxReuseTimes
-  cMaxLifetime?: XMuxSettingsOutputCMaxLifetime
+  hMaxReusableSecs?: XMuxSettingsOutputHMaxReusableSecs
   hMaxRequestTimes?: XMuxSettingsOutputHMaxRequestTimes
   hKeepAlivePeriod?: XMuxSettingsOutputHKeepAlivePeriod
 }
@@ -248,7 +248,7 @@ export type XMuxSettingsInputHKeepAlivePeriod = number | null
 
 export type XMuxSettingsInputHMaxRequestTimes = string | number | null
 
-export type XMuxSettingsInputCMaxLifetime = string | number | null
+export type XMuxSettingsInputHMaxReusableSecs = string | number | null
 
 export type XMuxSettingsInputCMaxReuseTimes = string | number | null
 
@@ -260,7 +260,7 @@ export interface XMuxSettingsInput {
   max_concurrency?: XMuxSettingsInputMaxConcurrency
   max_connections?: XMuxSettingsInputMaxConnections
   c_max_reuse_times?: XMuxSettingsInputCMaxReuseTimes
-  c_max_lifetime?: XMuxSettingsInputCMaxLifetime
+  h_max_reusable_secs?: XMuxSettingsInputHMaxReusableSecs
   h_max_request_times?: XMuxSettingsInputHMaxRequestTimes
   h_keep_alive_period?: XMuxSettingsInputHKeepAlivePeriod
 }
@@ -276,6 +276,16 @@ export type XHttpSettingsOutputScMaxEachPostBytes = string | null
 export type XHttpSettingsOutputXPaddingBytes = string | null
 
 export type XHttpSettingsOutputNoGrpcHeader = boolean | null
+
+export interface XHttpSettingsOutput {
+  mode?: XHttpModes
+  no_grpc_header?: XHttpSettingsOutputNoGrpcHeader
+  x_padding_bytes?: XHttpSettingsOutputXPaddingBytes
+  sc_max_each_post_bytes?: XHttpSettingsOutputScMaxEachPostBytes
+  sc_min_posts_interval_ms?: XHttpSettingsOutputScMinPostsIntervalMs
+  xmux?: XHttpSettingsOutputXmux
+  download_settings?: XHttpSettingsOutputDownloadSettings
+}
 
 export type XHttpSettingsInputDownloadSettings = number | null
 
@@ -298,16 +308,6 @@ export const XHttpModes = {
   'stream-up': 'stream-up',
   'stream-one': 'stream-one',
 } as const
-
-export interface XHttpSettingsOutput {
-  mode?: XHttpModes
-  no_grpc_header?: XHttpSettingsOutputNoGrpcHeader
-  x_padding_bytes?: XHttpSettingsOutputXPaddingBytes
-  sc_max_each_post_bytes?: XHttpSettingsOutputScMaxEachPostBytes
-  sc_min_posts_interval_ms?: XHttpSettingsOutputScMinPostsIntervalMs
-  xmux?: XHttpSettingsOutputXmux
-  download_settings?: XHttpSettingsOutputDownloadSettings
-}
 
 export interface XHttpSettingsInput {
   mode?: XHttpModes
@@ -581,8 +581,6 @@ export type UserResponseOnHoldExpireDuration = number | null
 
 export type UserResponseNote = string | null
 
-export type UserResponseDataLimitResetStrategy = UserDataLimitResetStrategy | null
-
 /**
  * data_limit can be 0 or greater
  */
@@ -614,6 +612,16 @@ export interface UserResponse {
   admin?: UserResponseAdmin
 }
 
+export interface UserNotificationEnable {
+  create?: boolean
+  modify?: boolean
+  delete?: boolean
+  status_change?: boolean
+  reset_data_usage?: boolean
+  data_reset_by_next?: boolean
+  subscription_revoked?: boolean
+}
+
 export type UserModifyStatus = UserStatusModify | null
 
 export type UserModifyNextPlan = NextPlanModel | null
@@ -628,6 +636,8 @@ export type UserModifyOnHoldExpireDuration = number | null
 
 export type UserModifyNote = string | null
 
+export type UserModifyDataLimitResetStrategy = UserDataLimitResetStrategy | null
+
 /**
  * data_limit can be 0 or greater
  */
@@ -636,19 +646,6 @@ export type UserModifyDataLimit = number | null
 export type UserModifyExpire = string | number | null
 
 export type UserModifyProxySettings = ProxyTableInput | null
-
-export type UserDataLimitResetStrategy = (typeof UserDataLimitResetStrategy)[keyof typeof UserDataLimitResetStrategy]
-
-// eslint-disable-next-line @typescript-eslint/no-redeclare
-export const UserDataLimitResetStrategy = {
-  no_reset: 'no_reset',
-  day: 'day',
-  week: 'week',
-  month: 'month',
-  year: 'year',
-} as const
-
-export type UserModifyDataLimitResetStrategy = UserDataLimitResetStrategy | null
 
 export interface UserModify {
   proxy_settings?: UserModifyProxySettings
@@ -664,6 +661,19 @@ export interface UserModify {
   next_plan?: UserModifyNextPlan
   status?: UserModifyStatus
 }
+
+export type UserDataLimitResetStrategy = (typeof UserDataLimitResetStrategy)[keyof typeof UserDataLimitResetStrategy]
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const UserDataLimitResetStrategy = {
+  no_reset: 'no_reset',
+  day: 'day',
+  week: 'week',
+  month: 'month',
+  year: 'year',
+} as const
+
+export type UserResponseDataLimitResetStrategy = UserDataLimitResetStrategy | null
 
 export type UserCreateStatus = UserStatusCreate | null
 
@@ -944,6 +954,8 @@ export type SettingsSchemaOutputSubscription = SubscriptionOutput | null
 
 export type SettingsSchemaOutputNotificationEnable = NotificationEnable | null
 
+export type SettingsSchemaOutputNotificationSettings = NotificationSettings | null
+
 export type SettingsSchemaOutputWebhook = Webhook | null
 
 export type SettingsSchemaOutputDiscord = Discord | null
@@ -1096,17 +1108,14 @@ export interface NotificationSettings {
   max_retries: number
 }
 
-export type SettingsSchemaOutputNotificationSettings = NotificationSettings | null
-
 export interface NotificationEnable {
-  admin?: boolean
-  core?: boolean
-  group?: boolean
-  host?: boolean
-  login?: boolean
-  node?: boolean
-  user?: boolean
-  user_template?: boolean
+  admin?: AdminNotificationEnable
+  core?: BaseNotificationEnable
+  group?: BaseNotificationEnable
+  host?: HostNotificationEnable
+  node?: NodeNotificationEnable
+  user?: UserNotificationEnable
+  user_template?: BaseNotificationEnable
   days_left?: boolean
   percentage_reached?: boolean
 }
@@ -1123,6 +1132,13 @@ export interface NoiseSettings {
 
 export type NodeUsageStatsListPeriod = Period | null
 
+export interface NodeUsageStatsList {
+  period?: NodeUsageStatsListPeriod
+  start: string
+  end: string
+  stats: NodeUsageStatsListStats
+}
+
 export interface NodeUsageStat {
   uplink: number
   downlink: number
@@ -1130,13 +1146,6 @@ export interface NodeUsageStat {
 }
 
 export type NodeUsageStatsListStats = { [key: string]: NodeUsageStat[] }
-
-export interface NodeUsageStatsList {
-  period?: NodeUsageStatsListPeriod
-  start: string
-  end: string
-  stats: NodeUsageStatsListStats
-}
 
 export type NodeStatus = (typeof NodeStatus)[keyof typeof NodeStatus]
 
@@ -1209,9 +1218,15 @@ export interface NodeRealtimeStats {
   outgoing_bandwidth_speed: number
 }
 
-export type NodeModifyStatus = NodeStatus | null
+export interface NodeNotificationEnable {
+  create?: boolean
+  modify?: boolean
+  delete?: boolean
+  connect?: boolean
+  error?: boolean
+}
 
-export type NodeModifyApiPort = number | null
+export type NodeModifyStatus = NodeStatus | null
 
 export type NodeModifyGatherLogs = boolean | null
 
@@ -1247,7 +1262,6 @@ export interface NodeModify {
   core_config_id?: NodeModifyCoreConfigId
   api_key?: NodeModifyApiKey
   gather_logs?: NodeModifyGatherLogs
-  api_port?: NodeModifyApiPort
   status?: NodeModifyStatus
 }
 
@@ -1364,6 +1378,13 @@ export interface KCPSettings {
   write_buffer_size?: KCPSettingsWriteBufferSize
 }
 
+export interface HostNotificationEnable {
+  create?: boolean
+  modify?: boolean
+  delete?: boolean
+  modify_hosts?: boolean
+}
+
 export interface HTTPValidationError {
   detail?: ValidationError[]
 }
@@ -1446,19 +1467,15 @@ export interface General {
 
 export type GRPCSettingsInitialWindowsSize = number | null
 
-export type GRPCSettingsPermitWithoutStream = boolean | null
-
 export type GRPCSettingsHealthCheckTimeout = number | null
 
 export type GRPCSettingsIdleTimeout = number | null
 
-export type GRPCSettingsMultiMode = boolean | null
-
 export interface GRPCSettings {
-  multi_mode?: GRPCSettingsMultiMode
+  multi_mode?: boolean
   idle_timeout?: GRPCSettingsIdleTimeout
   health_check_timeout?: GRPCSettingsHealthCheckTimeout
-  permit_without_stream?: GRPCSettingsPermitWithoutStream
+  permit_without_stream?: boolean
   initial_windows_size?: GRPCSettingsInitialWindowsSize
 }
 
@@ -1616,25 +1633,11 @@ export const ConfigFormat = {
   block: 'block',
 } as const
 
-export type ClashMuxSettingsBrutal = Brutal | null
-
 export type ClashMuxSettingsMinStreams = number | null
 
 export type ClashMuxSettingsMaxStreams = number | null
 
 export type ClashMuxSettingsMaxConnections = number | null
-
-export interface ClashMuxSettings {
-  enable?: boolean
-  protocol?: MultiplexProtocol
-  max_connections?: ClashMuxSettingsMaxConnections
-  max_streams?: ClashMuxSettingsMaxStreams
-  min_streams?: ClashMuxSettingsMinStreams
-  padding?: boolean
-  brutal?: ClashMuxSettingsBrutal
-  statistic?: boolean
-  only_tcp?: boolean
-}
 
 export type BulkUsersProxyMethod = ShadowsocksMethods | null
 
@@ -1669,6 +1672,20 @@ export interface Brutal {
   down_mbps: number
 }
 
+export type ClashMuxSettingsBrutal = Brutal | null
+
+export interface ClashMuxSettings {
+  enable?: boolean
+  protocol?: MultiplexProtocol
+  max_connections?: ClashMuxSettingsMaxConnections
+  max_streams?: ClashMuxSettingsMaxStreams
+  min_streams?: ClashMuxSettingsMinStreams
+  padding?: boolean
+  brutal?: ClashMuxSettingsBrutal
+  statistic?: boolean
+  only_tcp?: boolean
+}
+
 export type BodyAdminTokenApiAdminTokenPostClientSecret = string | null
 
 export type BodyAdminTokenApiAdminTokenPostClientId = string | null
@@ -1684,6 +1701,12 @@ export interface BodyAdminTokenApiAdminTokenPost {
   client_secret?: BodyAdminTokenApiAdminTokenPostClientSecret
 }
 
+export interface BaseNotificationEnable {
+  create?: boolean
+  modify?: boolean
+  delete?: boolean
+}
+
 export type BaseHostEchConfigList = string | null
 
 export type BaseHostStatus = UserStatus[] | null
@@ -1695,26 +1718,6 @@ export type BaseHostFragmentSettings = FragmentSettings | null
 export type BaseHostMuxSettings = MuxSettingsOutput | null
 
 export type BaseHostTransportSettings = TransportSettingsOutput | null
-
-export type BaseHostHttpHeadersAnyOf = { [key: string]: string }
-
-export type BaseHostHttpHeaders = BaseHostHttpHeadersAnyOf | null
-
-export type BaseHostAllowinsecure = boolean | null
-
-export type BaseHostAlpn = ProxyHostALPN[] | null
-
-export type BaseHostPath = string | null
-
-export type BaseHostHost = string[] | null
-
-export type BaseHostSni = string[] | null
-
-export type BaseHostPort = number | null
-
-export type BaseHostInboundTag = string | null
-
-export type BaseHostId = number | null
 
 export interface BaseHost {
   id?: BaseHostId
@@ -1741,6 +1744,26 @@ export interface BaseHost {
   status?: BaseHostStatus
   ech_config_list?: BaseHostEchConfigList
 }
+
+export type BaseHostHttpHeadersAnyOf = { [key: string]: string }
+
+export type BaseHostHttpHeaders = BaseHostHttpHeadersAnyOf | null
+
+export type BaseHostAllowinsecure = boolean | null
+
+export type BaseHostAlpn = ProxyHostALPN[] | null
+
+export type BaseHostPath = string | null
+
+export type BaseHostHost = string[] | null
+
+export type BaseHostSni = string[] | null
+
+export type BaseHostPort = number | null
+
+export type BaseHostInboundTag = string | null
+
+export type BaseHostId = number | null
 
 export type ApplicationOutputDescription = { [key: string]: string }
 
@@ -1770,6 +1793,14 @@ export interface ApplicationInput {
   recommended?: boolean
   platform: Platform
   download_links: DownloadLink[]
+}
+
+export interface AdminNotificationEnable {
+  create?: boolean
+  modify?: boolean
+  delete?: boolean
+  reset_usage?: boolean
+  login?: boolean
 }
 
 export type AdminModifySupportUrl = string | null
@@ -1805,15 +1836,15 @@ export interface AdminModify {
 
 export type AdminDetailsLifetimeUsedTraffic = number | null
 
-export type AdminDetailsSupportUrl = string | null
-
-export type AdminDetailsProfileTitle = string | null
-
 export type AdminDetailsSubTemplate = string | null
 
 export type AdminDetailsDiscordId = number | null
 
 export type AdminDetailsId = number | null
+
+export type AdminDetailsSupportUrl = string | null
+
+export type AdminDetailsProfileTitle = string | null
 
 export type AdminDetailsSubDomain = string | null
 
@@ -1829,6 +1860,8 @@ export interface AdminDetails {
   telegram_id?: AdminDetailsTelegramId
   discord_webhook?: AdminDetailsDiscordWebhook
   sub_domain?: AdminDetailsSubDomain
+  profile_title?: AdminDetailsProfileTitle
+  support_url?: AdminDetailsSupportUrl
   id?: AdminDetailsId
   is_sudo: boolean
   total_users?: number
@@ -1836,8 +1869,6 @@ export interface AdminDetails {
   is_disabled?: boolean
   discord_id?: AdminDetailsDiscordId
   sub_template?: AdminDetailsSubTemplate
-  profile_title?: AdminDetailsProfileTitle
-  support_url?: AdminDetailsSupportUrl
   lifetime_used_traffic?: AdminDetailsLifetimeUsedTraffic
 }
 
@@ -1874,6 +1905,10 @@ export interface AdminCreate {
   username: string
 }
 
+export type AdminContactInfoSupportUrl = string | null
+
+export type AdminContactInfoProfileTitle = string | null
+
 export type AdminContactInfoSubDomain = string | null
 
 export type AdminContactInfoDiscordWebhook = string | null
@@ -1888,6 +1923,8 @@ export interface AdminContactInfo {
   telegram_id?: AdminContactInfoTelegramId
   discord_webhook?: AdminContactInfoDiscordWebhook
   sub_domain?: AdminContactInfoSubDomain
+  profile_title?: AdminContactInfoProfileTitle
+  support_url?: AdminContactInfoSupportUrl
 }
 
 /**

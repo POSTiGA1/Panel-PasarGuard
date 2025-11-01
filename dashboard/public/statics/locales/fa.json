@@ -39,15 +39,29 @@
       "filterDescription": "رویدادهایی را انتخاب کنید که باید اعلان‌هایی را برای اطلاع‌رسانی از فعالیت‌های مهم سیستم ایجاد کنند",
       "types": {
         "admin": "مدیران",
-        "core": "هسته",
+        "core": "هسته‌ها",
         "group": "گروه‌ها",
         "host": "هاست‌ها",
-        "login": "ورود",
+        "login": "ورود‌ها",
         "node": "گره‌ها",
         "user": "کاربران",
         "userTemplate": "قالب‌ها",
-        "daysLeft": "انقضا",
-        "percentageReached": "مصرف"
+        "daysLeft": "انقضاها",
+        "percentageReached": "محدودیت‌های مصرف"
+      },
+      "subPermissions": {
+        "create": "ایجاد",
+        "modify": "ویرایش",
+        "delete": "حذف",
+        "resetUsage": "بازنشانی مصرف",
+        "login": "ورود",
+        "modifyHosts": "ویرایش هاست‌ها",
+        "connect": "اتصال",
+        "error": "خطا",
+        "statusChange": "تغییر وضعیت",
+        "resetDataUsage": "بازنشانی مصرف داده",
+        "dataResetByNext": "بازنشانی داده در بعدی",
+        "subscriptionRevoked": "لغو اشتراک"
       },
       "telegram": {
         "title": "تلگرام",
@@ -655,7 +669,7 @@
       "maxConcurrency": "حداکثر همزمانی",
       "maxConnections": "حداکثر اتصالات",
       "cMaxReuseTimes": "حداکثر دفعات استفاده مجدد",
-      "cMaxLifetime": "حداکثر طول عمر",
+      "hMaxReusableSecs": "حداکثر زمان استفاده مجدد (ثانیه)",
       "hMaxRequestTimes": "حداکثر دفعات درخواست",
       "hKeepAlivePeriod": "دوره نگهداری اتصال",
       "downloadSettings": "تنظیمات دانلود",
@@ -780,6 +794,7 @@
       "jalali_expire_date": "تاریخ انقضا به تقویم خورشیدی",
       "time_left": "زمان باقی‌مانده",
       "status_emoji": "وضعیت کاربر به صورت ایموجی (✅,⌛️,🪫,❌,🔌)",
+      "usage_percentage": "درصد استفاده از داده",
       "protocol": "پروتکل پروکسی (مثال: VMess)",
       "transport": "روش انتقال پروکسی (مثال: ws)",
       "admin_username": "نام کاربری ادمین"

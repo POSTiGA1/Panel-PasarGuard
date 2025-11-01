@@ -54,7 +54,7 @@ interface ValidationResult {
 }
 // Add encryption methods enum
 const SHADOWSOCKS_ENCRYPTION_METHODS = [
-  { value: '2022-blanke3-aes-128-gcm', label: '2022-blanke3-aes-128-gcm', length: 16 },
+  { value: '2022-blake3-aes-128-gcm', label: '2022-blake3-aes-128-gcm', length: 16 },
   { value: '2022-blake3-aes-256-gcm', label: '2022-blake3-aes-256-gcm', length: 32 },
 ] as const
 type VlessVariant = 'x25519' | 'mlkem768'
@@ -293,10 +293,8 @@ export default function CoreConfigModal({ isDialogOpen, onOpenChange, form, edit
 
       const randomBytes = new Uint8Array(method.length)
       crypto.getRandomValues(randomBytes)
+      // Shadowsocks 2022 requires standard base64 encoding (not URL-safe)
       const password = btoa(String.fromCharCode(...randomBytes))
-        .replace(/\+/g, '-')
-        .replace(/\//g, '_')
-        .replace(/=/g, '')
       setGeneratedShadowsocksPassword({ password, encryptionMethod: method.label })
       showResultDialog('shadowsocksPassword', { password, encryptionMethod: method.label })
       toast.success(t('coreConfigModal.shadowsocksPasswordGenerated'))
@@ -789,7 +787,6 @@ export default function CoreConfigModal({ isDialogOpen, onOpenChange, form, edit
         <DialogContent className="h-full max-w-full px-2 py-6 sm:h-auto sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
-              <Shield className="h-4 w-4 sm:h-5 sm:w-5 text-primary shrink-0" />
               <span className="truncate">{t('coreConfigModal.vlessAdvancedSettings', { defaultValue: 'VLESS Advanced Settings' })}</span>
             </DialogTitle>
           </DialogHeader>
@@ -1290,8 +1287,9 @@ export default function CoreConfigModal({ isDialogOpen, onOpenChange, form, edit
 
                                 {/* Fullscreen Mode */}
                                 {isEditorFullscreen ? (
-                                  <div className="relative z-10 w-full max-w-[95vw] h-auto rounded-lg border shadow-xl bg-background flex flex-col my-4 sm:my-8">
-                                    <div className="flex items-center justify-between border-b bg-background px-3 py-2.5 rounded-t-lg">
+                                  <div className="relative z-10 w-full h-full sm:w-full sm:max-w-[95vw] sm:h-auto sm:rounded-lg sm:border sm:shadow-xl bg-background flex flex-col sm:my-8">
+                                    {/* Header - hidden on mobile, visible on desktop */}
+                                    <div className="hidden sm:flex items-center justify-between border-b bg-background px-3 py-2.5 rounded-t-lg">
                                       <div className="flex items-center gap-2">
                                         <span className="text-sm font-medium">Xray Core Configuration</span>
                                       </div>
@@ -1306,7 +1304,18 @@ export default function CoreConfigModal({ isDialogOpen, onOpenChange, form, edit
                                         <Minimize2 className="h-4 w-4" />
                                       </Button>
                                     </div>
-                                    <div className="relative h-[calc(100vh-80px)] sm:h-[calc(100vh-160px)]" style={{ width: '100%' }}>
+                                    {/* Floating minimize button for mobile */}
+                                    <Button
+                                      type="button"
+                                      size="icon"
+                                      variant="default"
+                                      className="absolute top-2 right-2 z-20 sm:hidden h-9 w-9 rounded-full shadow-lg"
+                                      onClick={handleToggleFullscreen}
+                                      aria-label={t('exitFullscreen')}
+                                    >
+                                      <Minimize2 className="h-4 w-4" />
+                                    </Button>
+                                    <div className="relative h-full sm:h-[calc(100vh-160px)]" style={{ width: '100%' }}>
                                       <Editor
                                         height="100%"
                                         defaultLanguage="json"

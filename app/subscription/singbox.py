@@ -29,7 +29,6 @@ class SingBoxConfiguration(BaseSubscription):
             "httpupgrade": self._transport_httpupgrade,
             "h2": self._transport_http,
             "h3": self._transport_http,
-            "tcp": self._transport_http,
             "raw": self._transport_http,
         }
 
@@ -98,7 +97,9 @@ class SingBoxConfiguration(BaseSubscription):
         }
 
         if config.header_type == "http" and config.request:
-            transport.update(config.request)
+            # Filter out invalid fields for singbox transport
+            request_config = {k: v for k, v in config.request.items() if k != "version"}
+            transport.update(request_config)
         else:
             transport["headers"] = {k: [v] for k, v in config.http_headers.items()} if config.http_headers else {}
 
@@ -135,13 +136,15 @@ class SingBoxConfiguration(BaseSubscription):
 
     def _transport_grpc(self, config: GRPCTransportConfig, path: str) -> dict:
         """Handle GRPC transport - only gets GRPC config"""
-        return self._normalize_and_remove_none_values({
-            "type": "grpc",
-            "service_name": path,
-            "idle_timeout": f"{config.idle_timeout}s" if config.idle_timeout else "15s",
-            "ping_timeout": f"{config.health_check_timeout}s" if config.health_check_timeout else "15s",
-            "permit_without_stream": config.permit_without_stream,
-        })
+        return self._normalize_and_remove_none_values(
+            {
+                "type": "grpc",
+                "service_name": path,
+                "idle_timeout": f"{config.idle_timeout}s" if config.idle_timeout else "15s",
+                "ping_timeout": f"{config.health_check_timeout}s" if config.health_check_timeout else "15s",
+                "permit_without_stream": config.permit_without_stream,
+            }
+        )
 
     def _transport_httpupgrade(self, config: WebSocketTransportConfig, path: str) -> dict:
         """Handle HTTPUpgrade transport - only gets WS config (similar to WS)"""
@@ -167,6 +170,10 @@ class SingBoxConfiguration(BaseSubscription):
         if network in ("tcp", "raw") and getattr(inbound.transport_config, "header_type", "none") == "http":
             network = "http"
 
+        # For pure TCP connections without HTTP headers, don't add transport config
+        if network in ("tcp", "raw") and getattr(inbound.transport_config, "header_type", "none") != "http":
+            return None
+
         handler = self.transport_handlers.get(network)
         if not handler:
             return None
@@ -185,8 +192,11 @@ class SingBoxConfiguration(BaseSubscription):
             if isinstance(tls_config.sni, str)
             else (tls_config.sni[0] if tls_config.sni else None),
             "insecure": tls_config.allowinsecure,
-            "utls": {"enabled": bool(tls_config.fingerprint), "fingerprint": tls_config.fingerprint}
-            if tls_config.fingerprint
+            "utls": {
+                "enabled": bool(tls_config.fingerprint) or tls_config.tls == "reality",
+                "fingerprint": tls_config.fingerprint,
+            }
+            if tls_config.fingerprint or tls_config.tls == "reality"
             else None,
             "alpn": tls_config.alpn_singbox,  # Pre-formatted for sing-box!
             "ech": {
@@ -315,8 +325,27 @@ class SingBoxConfiguration(BaseSubscription):
 
         # Add mux
         if inbound.mux_settings and (singbox_mux := inbound.mux_settings.get("sing_box")) and singbox_mux.get("enable"):
-            singbox_mux = self._normalize_and_remove_none_values(singbox_mux)
-            config["multiplex"] = singbox_mux
+            # Filter out the enable field as it's not part of singbox multiplex config
+            multiplex_config = {k: v for k, v in singbox_mux.items() if k != "enable"}
+
+            # Add enabled: true to multiplex config
+            multiplex_config["enabled"] = True
+
+            # Handle brutal configuration - only include if brutal.enable is True
+            if "brutal" in multiplex_config:
+                brutal_config = multiplex_config["brutal"]
+                if brutal_config and brutal_config.get("enable"):
+                    # Add enabled: true to brutal config
+                    multiplex_config["brutal"] = {
+                        "enabled": True,
+                        **{k: v for k, v in brutal_config.items() if k != "enable"},
+                    }
+                else:
+                    # Remove brutal config entirely if enable is False or brutal is None
+                    multiplex_config.pop("brutal", None)
+
+            multiplex_config = self._normalize_and_remove_none_values(multiplex_config)
+            config["multiplex"] = multiplex_config
 
         return self._normalize_and_remove_none_values(config)
 

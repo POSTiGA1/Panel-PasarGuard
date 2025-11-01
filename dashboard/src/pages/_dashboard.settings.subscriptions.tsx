@@ -14,6 +14,7 @@ import { Plus, Trash2, Filter, FileText, Link, Clock, HelpCircle, User, Settings
 import { useSettingsContext } from './_dashboard.settings'
 import { ConfigFormat } from '@/service/api'
 import { toast } from 'sonner'
+import { VariablesPopover } from '@/components/ui/variables-popover'
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core'
 import { SortableContext, sortableKeyboardCoordinates, useSortable, rectSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
@@ -870,10 +871,13 @@ export default function SubscriptionSettings() {
                 name="profile_title"
                 render={({ field }) => (
                   <FormItem className="space-y-2">
-                    <FormLabel className="flex items-center gap-2 text-sm font-medium">
-                      <User className="h-4 w-4" />
-                      {t('settings.subscriptions.general.profileTitle')}
-                    </FormLabel>
+                    <div className="flex items-center gap-2">
+                      <FormLabel className="flex items-center gap-2 text-sm font-medium">
+                        <User className="h-4 w-4" />
+                        {t('settings.subscriptions.general.profileTitle')}
+                      </FormLabel>
+                      <VariablesPopover />
+                    </div>
                     <FormControl>
                       <Input placeholder={t('settings.subscriptions.general.profileTitlePlaceholder')} {...field} />
                     </FormControl>
@@ -1167,15 +1171,8 @@ export default function SubscriptionSettings() {
               <Button type="button" variant="outline" onClick={handleCancel} className="w-full min-w-[100px] sm:w-auto" disabled={isSaving}>
                 {t('cancel')}
               </Button>
-              <Button type="submit" disabled={isSaving} className="w-full min-w-[100px] sm:w-auto">
-                {isSaving ? (
-                  <div className="flex items-center gap-2">
-                    <div className="h-4 w-4 animate-spin rounded-full border-b-2 border-white"></div>
-                    {t('saving')}
-                  </div>
-                ) : (
-                  t('save')
-                )}
+              <Button type="submit" disabled={isSaving} isLoading={isSaving} loadingText={t('saving')} className="w-full min-w-[100px] sm:w-auto">
+                {t('save')}
               </Button>
             </div>
           </div>

@@ -12,7 +12,7 @@ from fastapi.routing import APIRoute
 from app.utils.logger import get_logger
 from config import ALLOWED_ORIGINS, DOCS, SUBSCRIPTION_PATH
 
-__version__ = "1.3.2"
+__version__ = "1.4.1"
 
 startup_functions = []
 shutdown_functions = []
@@ -66,7 +66,7 @@ app = FastAPI(
     openapi_url="/openapi.json" if DOCS else None,
 )
 
-scheduler = AsyncIOScheduler(job_defaults={"max_instances": 20}, timezone="UTC")
+scheduler = AsyncIOScheduler(job_defaults={"max_instances": 30}, timezone="UTC")
 logger = get_logger()
 
 

@@ -145,15 +145,29 @@
       "filterDescription": "Выберите события, которые должны вызывать уведомления для информирования о важных системных действиях",
       "types": {
         "admin": "Админы",
-        "core": "Ядро",
+        "core": "Ядра",
         "group": "Группы",
         "host": "Хосты",
-        "login": "Вход",
+        "login": "Входы",
         "node": "Узлы",
         "user": "Пользователи",
         "userTemplate": "Шаблоны",
-        "daysLeft": "Истечение",
-        "percentageReached": "Использование"
+        "daysLeft": "Истечения",
+        "percentageReached": "Использование ограничений"
+      },
+      "subPermissions": {
+        "create": "Создать",
+        "modify": "Изменить",
+        "delete": "Удалить",
+        "resetUsage": "Сбросить использование",
+        "login": "Вход",
+        "modifyHosts": "Изменить хосты",
+        "connect": "Подключить",
+        "error": "Ошибка",
+        "statusChange": "Изменение статуса",
+        "resetDataUsage": "Сбросить использование данных",
+        "dataResetByNext": "Сброс данных при следующем",
+        "subscriptionRevoked": "Подписка отозвана"
       },
       "telegram": {
         "title": "Telegram",
@@ -971,7 +985,7 @@
       "maxConcurrency": "Максимум параллельных",
       "maxConnections": "Максимум соединений",
       "cMaxReuseTimes": "Максимум повторных использований",
-      "cMaxLifetime": "Максимальный срок службы",
+      "hMaxReusableSecs": "Максимальное время повторного использования (сек)",
       "hMaxRequestTimes": "Максимум запросов",
       "hKeepAlivePeriod": "Период поддержания соединения",
       "downloadSettings": "Настройки загрузки",
@@ -1062,6 +1076,7 @@
       "jalali_expire_date": "Дата истечения срока по солнечному календарю",
       "time_left": "Оставшееся время",
       "status_emoji": "Статус пользователя в виде эмодзи (✅,⌛️,🪫,❌,🔌)",
+      "usage_percentage": "Процент использования данных",
       "protocol": "Протокол прокси (например, VMess)",
       "transport": "Метод транспорта прокси (например, ws)",
       "admin_username": "Имя пользователя администратора"
