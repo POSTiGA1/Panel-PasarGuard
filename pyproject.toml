@@ -1,6 +1,6 @@
 [project]
 name = "PasarGuard"
-version = "1.4.1"
+version = "1.5.0"
 description = "Unified GUI Censorship Resistant Solution"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -44,7 +44,7 @@ dependencies = [
     "uvloop>=0.21.0; sys_platform != 'win32'",
     "aiorwlock>=1.5.0",
     "typer>=0.17.3",
-    "pasarguard-node-bridge>=0.1.0",
+    "pasarguard-node-bridge>=0.1.1",
     "pip-system-certs>=5.3",
 ]
 

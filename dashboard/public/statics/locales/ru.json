@@ -190,6 +190,11 @@
         "miniAppUrl": "URL мини-приложения",
         "miniAppUrlPlaceholder": "Введите URL мини-приложения (необязательно)",
         "miniAppUrlDescription": "URL вашего мини-приложения Telegram. Оставьте пустым, если не используется."
+      },
+      "channels": {
+        "title": "Переопределение каналов",
+        "description": "Переопределите стандартные каналы для конкретных событий уведомлений. Оставьте поля пустыми, чтобы использовать глобальные настройки.",
+        "hint": "Оставьте поля пустыми, чтобы вернуться к основным настройкам уведомлений для этого события."
       }
     },
     "subscriptions": {
@@ -213,6 +218,12 @@
         "profileTitle": "Название профиля",
         "profileTitlePlaceholder": "Мой VPN сервис",
         "profileTitleDescription": "Отображаемое имя для профиля подписки",
+        "announce": "Объявление",
+        "announcePlaceholder": "Технические работы начнутся в 02:00",
+        "announceDescription": "Короткое сообщение, показываемое пользователям в поддерживаемых клиентах подписки",
+        "announceUrl": "Ссылка на объявление",
+        "announceUrlPlaceholder": "https://status.example.com",
+        "announceUrlDescription": "Необязательная ссылка с дополнительной информацией об объявлении",
         "hostStatusFilter": "Фильтр статуса хоста",
         "hostStatusFilterDescription": "Фильтровать хосты на основе их статуса"
       },
@@ -1356,6 +1367,7 @@
     "chooseAuthentication": "Выберите один метод аутентификации для использования, не смешивайте их. Обмен эфемерными ключами в любом случае Post-Quantum безопасен.",
     "x25519Authentication": "X25519, не Post-Quantum",
     "mlkem768Authentication": "ML-KEM-768, Post-Quantum",
+    "generate": "Сгенерировать",
     "decryption": "Расшифровка",
     "encryption": "Шифрование",
     "decryptionCopied": "Расшифровка скопирована в буфер обмена",
@@ -1372,8 +1384,6 @@
     "copyMldsa65Verify": "Копировать Verify",
     "mldsa65SeedCopied": "Seed скопирован в буфер обмена",
     "mldsa65VerifyCopied": "Verify скопирован в буфер обмена",
-    "vlessBuilderTitle": "Конструктор шифрования VLESS",
-    "vlessBuilderDescription": "Настройте рукопожатие, шифрование, билеты возобновления и блоки заполнения перед генерацией.",
     "vlessHandshakeLabel": "Метод рукопожатия",
     "vlessHandshakeOptionMlkem768x25519plus": "mlkem768x25519plus",
     "vlessEncryptionLabel": "Метод шифрования",
@@ -1664,11 +1674,14 @@
   },
   "goal": {
     "currentGoal": "Текущая цель",
+    "progress": "Прогресс",
     "of": "из",
     "remaining": "Осталось",
     "contribute": "Поддержать",
     "completed": "Завершено",
-    "pending": "В процессе"
+    "pending": "В процессе",
+    "githubStarsUnit": "звёзд",
+    "githubProgress": "Прогресс по звёздам"
   },
   "validation": {
     "generic": "{{field}} недействительно",

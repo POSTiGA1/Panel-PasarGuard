@@ -156,6 +156,11 @@
         "description": "配置高级通知行为，包括重试策略和代理设置",
         "maxRetries": "最大重试次数",
         "proxyUrl": "代理 URL"
+      },
+      "channels": {
+        "title": "频道覆盖",
+        "description": "覆盖特定通知事件的默认目标。留空以继承全局配置。",
+        "hint": "留空以恢复此事件的主要通知设置。"
       }
     },
     "subscriptions": {
@@ -179,6 +184,12 @@
         "profileTitle": "配置文件标题",
         "profileTitlePlaceholder": "输入配置文件标题",
         "profileTitleDescription": "显示在客户端中的配置文件名称",
+        "announce": "公告内容",
+        "announcePlaceholder": "服务将于 02:00 进行维护",
+        "announceDescription": "在支持的订阅客户端中展示给用户的简短消息",
+        "announceUrl": "公告链接",
+        "announceUrlPlaceholder": "https://status.example.com",
+        "announceUrlDescription": "可选的链接，用于提供更多公告细节",
         "hostStatusFilter": "主机状态过滤",
         "hostStatusFilterDescription": "仅包含活跃主机在订阅中"
       },
@@ -1398,6 +1409,7 @@
     "chooseAuthentication": "选择一种身份验证方法使用，不要混合使用。临时密钥交换无论如何都是 post-quantum 安全的。",
     "x25519Authentication": "X25519，非 post-quantum",
     "mlkem768Authentication": "ML-KEM-768，post-quantum",
+    "generate": "生成",
     "decryption": "解密",
     "encryption": "加密",
     "decryptionCopied": "解密已复制到剪贴板",
@@ -1414,8 +1426,6 @@
     "copyMldsa65Verify": "复制 Verify",
     "mldsa65SeedCopied": "Seed 已复制到剪贴板",
     "mldsa65VerifyCopied": "Verify 已复制到剪贴板",
-    "vlessBuilderTitle": "VLESS 加密生成器",
-    "vlessBuilderDescription": "生成前可调整握手方式、加密方式、恢复票证和填充块。",
     "vlessHandshakeLabel": "握手方式",
     "vlessHandshakeOptionMlkem768x25519plus": "mlkem768x25519plus",
     "vlessEncryptionLabel": "加密方式",
@@ -1703,11 +1713,14 @@
   },
   "goal": {
     "currentGoal": "当前目标",
+    "progress": "进度",
     "of": "共",
     "remaining": "剩余",
     "contribute": "贡献",
     "completed": "已完成",
-    "pending": "进行中"
+    "pending": "进行中",
+    "githubStarsUnit": "星标",
+    "githubProgress": "星标进度"
   },
   "validation": {
     "generic": "{{field}} 无效",

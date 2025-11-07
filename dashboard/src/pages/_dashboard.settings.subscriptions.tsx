@@ -10,7 +10,7 @@ import { Switch } from '@/components/ui/switch'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
 import { Badge } from '@/components/ui/badge'
-import { Plus, Trash2, Filter, FileText, Link, Clock, HelpCircle, User, Settings, Code, FileCode2, Sword, Shield, Lock, GripVertical, RotateCcw } from 'lucide-react'
+import { Plus, Trash2, Filter, FileText, Link, Clock, HelpCircle, User, Settings, Code, FileCode2, Sword, Shield, Lock, GripVertical, RotateCcw, Megaphone, ExternalLink } from 'lucide-react'
 import { useSettingsContext } from './_dashboard.settings'
 import { ConfigFormat } from '@/service/api'
 import { toast } from 'sonner'
@@ -28,6 +28,8 @@ const subscriptionSchema = z.object({
   update_interval: z.number().min(1, 'Update interval must be at least 1 hour').max(168, 'Update interval cannot exceed 168 hours (1 week)').optional(),
   support_url: z.string().url('Please enter a valid URL').optional().or(z.literal('')),
   profile_title: z.string().optional(),
+  announce: z.string().max(128, 'Announcement must be 128 characters or less').optional(),
+  announce_url: z.string().url('Please enter a valid URL').optional().or(z.literal('')),
   host_status_filter: z.boolean(),
   rules: z.array(
     z.object({
@@ -408,6 +410,18 @@ export default function SubscriptionSettings() {
   const [newDescLang, setNewDescLang] = useState<'fa' | 'en' | 'ru' | 'zh'>('en')
   const [newAppDescription, setNewAppDescription] = useState<Record<'fa' | 'en' | 'ru' | 'zh', string>>({} as any)
 
+  const isValidIconUrl = (url: string): boolean => {
+    if (!url || url.trim() === '') return false
+
+    try {
+      const urlObj = new URL(url)
+      // Only allow HTTP and HTTPS protocols
+      return urlObj.protocol === 'http:' || urlObj.protocol === 'https:'
+    } catch {
+      return false
+    }
+  }
+
   useEffect(() => {
     // reset icon error state when URL changes
     setNewAppIconBroken(false)
@@ -420,6 +434,8 @@ export default function SubscriptionSettings() {
       update_interval: 24,
       support_url: '',
       profile_title: '',
+      announce: '',
+      announce_url: '',
       host_status_filter: false,
       rules: [],
       applications: [],
@@ -505,6 +521,8 @@ export default function SubscriptionSettings() {
         update_interval: subscriptionData.update_interval || 24,
         support_url: subscriptionData.support_url || '',
         profile_title: subscriptionData.profile_title || '',
+        announce: subscriptionData.announce || '',
+        announce_url: subscriptionData.announce_url || '',
         host_status_filter: subscriptionData.host_status_filter || false,
         rules: subscriptionData.rules || [],
         applications: subscriptionData.applications || [],
@@ -558,6 +576,8 @@ export default function SubscriptionSettings() {
           url_prefix: data.url_prefix?.trim() || undefined,
           support_url: data.support_url?.trim() || undefined,
           profile_title: data.profile_title?.trim() || undefined,
+          announce: data.announce?.trim() || undefined,
+          announce_url: data.announce_url?.trim() || undefined,
           // Include processed applications
           applications: processedApplications,
         },
@@ -631,6 +651,8 @@ export default function SubscriptionSettings() {
         update_interval: subscriptionData.update_interval || 24,
         support_url: subscriptionData.support_url || '',
         profile_title: subscriptionData.profile_title || '',
+        announce: subscriptionData.announce || '',
+        announce_url: subscriptionData.announce_url || '',
         host_status_filter: subscriptionData.host_status_filter || false,
         rules: subscriptionData.rules || [],
         applications: subscriptionData.applications || [],
@@ -882,6 +904,42 @@ export default function SubscriptionSettings() {
                       <Input placeholder={t('settings.subscriptions.general.profileTitlePlaceholder')} {...field} />
                     </FormControl>
                     <FormDescription className="text-sm text-muted-foreground">{t('settings.subscriptions.general.profileTitleDescription')}</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="announce"
+                render={({ field }) => (
+                  <FormItem className="space-y-2">
+                    <FormLabel className="flex items-center gap-2 text-sm font-medium">
+                      <Megaphone className="h-4 w-4" />
+                      {t('settings.subscriptions.general.announce')}
+                    </FormLabel>
+                    <FormControl>
+                      <Input maxLength={128} placeholder={t('settings.subscriptions.general.announcePlaceholder')} {...field} />
+                    </FormControl>
+                    <FormDescription className="text-sm text-muted-foreground">{t('settings.subscriptions.general.announceDescription')}</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="announce_url"
+                render={({ field }) => (
+                  <FormItem className="space-y-2">
+                    <FormLabel className="flex items-center gap-2 text-sm font-medium">
+                      <ExternalLink className="h-4 w-4" />
+                      {t('settings.subscriptions.general.announceUrl')}
+                    </FormLabel>
+                    <FormControl>
+                      <Input type="url" placeholder={t('settings.subscriptions.general.announceUrlPlaceholder')} {...field} className="font-mono" />
+                    </FormControl>
+                    <FormDescription className="text-sm text-muted-foreground">{t('settings.subscriptions.general.announceUrlDescription')}</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -1211,7 +1269,7 @@ export default function SubscriptionSettings() {
                   <div className="flex items-center gap-2">
                     <Input value={newAppIconUrl} onChange={e => setNewAppIconUrl(e.target.value)} placeholder={t('settings.subscriptions.applications.iconUrlPlaceholder', { defaultValue: 'https://...' })} className="h-8 text-xs font-mono" dir="ltr" />
                     {/* live preview */}
-                    {newAppIconUrl && !newAppIconBroken ? (
+                    {newAppIconUrl && !newAppIconBroken && isValidIconUrl(newAppIconUrl) ? (
                       <img src={newAppIconUrl} alt="icon" className="h-6 w-6 rounded-sm object-cover" onError={() => setNewAppIconBroken(true)} />
                     ) : (
                       <div className="h-6 w-6 rounded-sm bg-muted text-muted-foreground/80 inline-flex items-center justify-center">

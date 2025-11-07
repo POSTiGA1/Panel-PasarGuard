@@ -69,7 +69,7 @@
         "apiToken": "توکن API ربات",
         "adminId": "شناسه چت مدیر",
         "channelId": "شناسه کانال",
-        "topicId": "شناسه موضوع"
+        "topicId": "شناسه تاپیک"
       },
       "discord": {
         "title": "Discord",
@@ -84,6 +84,11 @@
         "miniAppUrl": "آدرس مینی‌اپ تلگرام",
         "miniAppUrlPlaceholder": "آدرس مینی‌اپ را وارد کنید (اختیاری)",
         "miniAppUrlDescription": "آدرس مینی‌اپ تلگرام خود را وارد کنید. در صورت عدم استفاده، خالی بگذارید."
+      },
+      "channels": {
+        "title": "مقصد اعلان‌ها",
+        "description": "تنظیم مقصد پیش‌فرض برای رویدادهای اعلان‌های خاص. هر فیلد را خالی بگذارید تا تنظیمات عمومی را دریافت کنید.",
+        "hint": "هر فیلد را خالی بگذارید تا تنظیمات عمومی را دریافت کنید."
       }
     },
     "subscriptions": {
@@ -107,6 +112,12 @@
         "profileTitle": "عنوان پروفایل",
         "profileTitlePlaceholder": "سرویس VPN من",
         "profileTitleDescription": "نام نمایشی برای پروفایل اشتراک",
+        "announce": "متن اطلاعیه",
+        "announcePlaceholder": "سرویس امشب ساعت ۰۲:۰۰ در دسترس نیست",
+        "announceDescription": "پیام کوتاهی که در کلاینت‌های سازگار نمایش داده می‌شود",
+        "announceUrl": "آدرس اطلاعیه",
+        "announceUrlPlaceholder": "https://status.example.com",
+        "announceUrlDescription": "لینک اختیاری برای جزئیات بیشتر اطلاعیه",
         "hostStatusFilter": "فیلتر وضعیت هاست",
         "hostStatusFilterDescription": "فیلتر کردن هاست‌ها بر اساس وضعیت آن‌ها"
       },
@@ -1336,6 +1347,7 @@
     "chooseAuthentication": "یکی از روش‌های احراز هویت را انتخاب کنید، آن‌ها را با هم مخلوط نکنید. تبادل کلید موقت در هر صورت Post-Quantum امن است.",
     "x25519Authentication": "X25519، غیر Post-Quantum",
     "mlkem768Authentication": "ML-KEM-768، Post-Quantum",
+    "generate": "تولید",
     "decryption": "رمزگشایی",
     "encryption": "رمزنگاری",
     "decryptionCopied": "رمزگشایی در کلیپ‌بورد کپی شد",
@@ -1352,8 +1364,6 @@
     "copyMldsa65Verify": "کپی Verify",
     "mldsa65SeedCopied": "Seed در کلیپ‌بورد کپی شد",
     "mldsa65VerifyCopied": "Verify در کلیپ‌بورد کپی شد",
-    "vlessBuilderTitle": "سازنده رمزنگاری VLESS",
-    "vlessBuilderDescription": "پیش از تولید، روش دست‌دهی، رمزنگاری، بلیت‌های ازسرگیری و پدینگ‌ها را تنظیم کنید.",
     "vlessHandshakeLabel": "روش دست‌دهی",
     "vlessHandshakeOptionMlkem768x25519plus": "mlkem768x25519plus",
     "vlessEncryptionLabel": "روش رمزنگاری",
@@ -1661,10 +1671,13 @@
   },
   "goal": {
     "currentGoal": "هدف فعلی",
+    "progress": "پیشرفت",
     "of": "از",
     "remaining": "باقیمانده",
     "contribute": "مشارکت کنید",
     "completed": "تکمیل شده",
-    "pending": "در حال انجام"
+    "pending": "در حال انجام",
+    "githubStarsUnit": "ستاره",
+    "githubProgress": "پیشرفت ستاره‌ها"
   }
 }
