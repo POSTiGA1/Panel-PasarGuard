@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils'
 import { UseEditFormValues, UseFormValues } from '@/pages/_dashboard.users'
 import { useActiveNextPlan, useGetCurrentAdmin, useRemoveUser, useResetUserDataUsage, useRevokeUserSubscription, UserResponse } from '@/service/api'
 import { useQueryClient } from '@tanstack/react-query'
-import { Check, Copy, Cpu, EllipsisVertical, ListStart, Pencil, PieChart, QrCode, RefreshCcw, Trash2, User, Users } from 'lucide-react'
+import { Check, Copy, Cpu, EllipsisVertical, ListStart, Network, Pencil, PieChart, QrCode, RefreshCcw, Trash2, User, Users } from 'lucide-react'
 import { FC, useCallback, useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
@@ -17,6 +17,7 @@ import SetOwnerModal from './dialogs/SetOwnerModal'
 import UsageModal from './dialogs/UsageModal'
 import UserModal from './dialogs/UserModal'
 import { UserSubscriptionClientsModal } from './dialogs/UserSubscriptionClientsModal'
+import UserAllIPsModal from './dialogs/UserAllIPsModal'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from './ui/dropdown-menu'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip'
 
@@ -42,6 +43,7 @@ const ActionButtons: FC<ActionButtonsProps> = ({ user }) => {
   const [isSetOwnerModalOpen, setSetOwnerModalOpen] = useState(false)
   const [isActiveNextPlanModalOpen, setIsActiveNextPlanModalOpen] = useState(false)
   const [isSubscriptionClientsModalOpen, setSubscriptionClientsModalOpen] = useState(false)
+  const [isUserAllIPsModalOpen, setUserAllIPsModalOpen] = useState(false)
   const queryClient = useQueryClient()
   const { t } = useTranslation()
   const dir = useDirDetection()
@@ -51,14 +53,9 @@ const ActionButtons: FC<ActionButtonsProps> = ({ user }) => {
   const activeNextMutation = useActiveNextPlan()
   const { data: currentAdmin } = useGetCurrentAdmin({
     query: {
-      // Cache for 5 minutes to avoid repeated calls
       staleTime: 5 * 60 * 1000,
-      // Keep in cache for 10 minutes
       gcTime: 10 * 60 * 1000,
-      // Don't refetch on mount if we have cached data
       refetchOnMount: false,
-      // Only refetch on window focus if data is stale
-      refetchOnWindowFocus: false,
     },
   })
 
@@ -222,33 +219,6 @@ const ActionButtons: FC<ActionButtonsProps> = ({ user }) => {
     return /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
   }
 
-  const copyToClipboardIOS = async (content: string): Promise<boolean> => {
-    try {
-      // Try modern clipboard API first
-      if (navigator.clipboard && window.isSecureContext) {
-        await navigator.clipboard.writeText(content)
-        return true
-      }
-
-      // Fallback: create temporary textarea
-      const textArea = document.createElement('textarea')
-      textArea.value = content
-      textArea.style.position = 'fixed'
-      textArea.style.left = '-999999px'
-      textArea.style.top = '-999999px'
-      document.body.appendChild(textArea)
-      textArea.focus()
-      textArea.select()
-
-      const success = document.execCommand('copy')
-      document.body.removeChild(textArea)
-      return success
-    } catch (error) {
-      console.error('iOS clipboard copy failed:', error)
-      return false
-    }
-  }
-
   const showManualCopyAlert = (content: string, type: 'content' | 'url') => {
     const message =
       type === 'content' ? t('copyFailed', { defaultValue: 'Failed to copy automatically. Please copy manually:' }) : t('downloadFailed', { defaultValue: 'Download blocked. Please copy manually:' })
@@ -265,16 +235,18 @@ const ActionButtons: FC<ActionButtonsProps> = ({ user }) => {
 
   const handleLinksCopy = async (subLink: SubscribeLink) => {
     try {
-      const content = await fetchContent(subLink.link)
-
       if (isIOS()) {
-        const success = await copyToClipboardIOS(content)
-        if (success) {
-          toast.success(t('usersTable.copied', { defaultValue: 'Copied to clipboard' }))
+        // iOS: redirect/open in new tab instead of copying
+        const newWindow = window.open(subLink.link, '_blank')
+        if (!newWindow) {
+          const content = await fetchContent(subLink.link)
+          showManualCopyAlert(content, 'url')
         } else {
-          showManualCopyAlert(content, 'content')
+          toast.success(t('downloadSuccess', { defaultValue: 'Configuration opened in new tab' }))
         }
       } else {
+        // Non-iOS: copy content as before
+        const content = await fetchContent(subLink.link)
         await copy(content)
         toast.success(t('usersTable.copied', { defaultValue: 'Copied to clipboard' }))
       }
@@ -287,17 +259,8 @@ const ActionButtons: FC<ActionButtonsProps> = ({ user }) => {
 
   const handleUrlCopy = async (url: string) => {
     try {
-      if (isIOS()) {
-        const success = await copyToClipboardIOS(url)
-        if (success) {
-          toast.success(t('usersTable.copied', { defaultValue: 'URL copied to clipboard' }))
-        } else {
-          showManualCopyAlert(url, 'url')
-        }
-      } else {
-        await copy(url)
-        toast.success(t('usersTable.copied', { defaultValue: 'URL copied to clipboard' }))
-      }
+      await copy(url)
+      toast.success(t('usersTable.copied', { defaultValue: 'URL copied to clipboard' }))
     } catch (error) {
       toast.error(t('copyFailed', { defaultValue: 'Failed to copy content' }))
     }
@@ -365,8 +328,8 @@ const ActionButtons: FC<ActionButtonsProps> = ({ user }) => {
           />
           <Tooltip open={copied ? true : undefined}>
             <DropdownMenu>
-              <DropdownMenuTrigger>
-                <TooltipTrigger>
+              <DropdownMenuTrigger asChild>
+                <TooltipTrigger asChild>
                   <Button size="icon" variant="ghost">
                     {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                   </Button>
@@ -374,12 +337,8 @@ const ActionButtons: FC<ActionButtonsProps> = ({ user }) => {
               </DropdownMenuTrigger>
               <DropdownMenuContent>
                 {subscribeLinks.map(subLink => (
-                  <DropdownMenuItem 
-                    className="justify-start p-0" 
-                    key={subLink.link}
-                    onClick={() => handleCopyOrDownload(subLink)}
-                  >
-                    <span className="flex items-center gap-2 w-full px-2 py-1.5">
+                  <DropdownMenuItem className="justify-start p-0" key={subLink.link} onClick={() => handleCopyOrDownload(subLink)}>
+                    <span className="flex w-full items-center gap-2 px-2 py-1.5">
                       <span className="text-sm">{subLink.icon}</span>
                       <span>{subLink.protocol}</span>
                     </span>
@@ -456,8 +415,16 @@ const ActionButtons: FC<ActionButtonsProps> = ({ user }) => {
             {/* Subscription Info */}
             <DropdownMenuItem onClick={() => setSubscriptionClientsModalOpen(true)}>
               <Users className="mr-2 h-4 w-4" />
-              <span>{t('subscriptionClients.viewAllClients', { defaultValue: 'View All Clients' })}</span>
+              <span>{t('subscriptionClients.clients', { defaultValue: 'Clients' })}</span>
             </DropdownMenuItem>
+
+            {/* View All IPs: only for sudo admins */}
+            {currentAdmin?.is_sudo && (
+              <DropdownMenuItem onClick={() => setUserAllIPsModalOpen(true)}>
+                <Network className="mr-2 h-4 w-4" />
+                <span>{t('userAllIPs.ipAddresses', { defaultValue: 'IP addresses' })}</span>
+              </DropdownMenuItem>
+            )}
 
             <DropdownMenuSeparator />
 
@@ -549,6 +516,11 @@ const ActionButtons: FC<ActionButtonsProps> = ({ user }) => {
 
       {/* UserSubscriptionClientsModal */}
       <UserSubscriptionClientsModal isOpen={isSubscriptionClientsModalOpen} onOpenChange={setSubscriptionClientsModalOpen} username={user.username} />
+
+      {/* UserAllIPsModal: only for sudo admins */}
+      {currentAdmin?.is_sudo && (
+        <UserAllIPsModal isOpen={isUserAllIPsModalOpen} onOpenChange={setUserAllIPsModalOpen} username={user.username} />
+      )}
     </div>
   )
 }

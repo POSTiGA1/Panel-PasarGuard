@@ -6,7 +6,7 @@ import * as React from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
-import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
+import { Sheet, SheetContent, SheetDescription, SheetTitle } from '@/components/ui/sheet'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { useIsMobile } from '@/hooks/use-mobile'
@@ -84,7 +84,7 @@ const SidebarProvider = React.forwardRef<
 
       // Store in both cookie and localStorage for persistence
       document.cookie = `${SIDEBAR_COOKIE_NAME}=${openState}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`
-      
+
       try {
         localStorage.setItem(SIDEBAR_LOCALSTORAGE_KEY, openState.toString())
       } catch (error) {
@@ -203,6 +203,7 @@ const Sidebar = React.forwardRef<
           side={side}
         >
           <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
+          <SheetDescription className="sr-only">Main navigation menu for the application</SheetDescription>
           <div className="flex h-full w-full flex-col">{children}</div>
         </SheetContent>
       </Sheet>
@@ -294,7 +295,11 @@ const SidebarRail = React.forwardRef<HTMLButtonElement, React.ComponentProps<'bu
             'group-data-[collapsible=offcanvas]:translate-x-0 group-data-[collapsible=offcanvas]:after:left-full group-data-[collapsible=offcanvas]:hover:bg-sidebar',
             '[[data-side=left][data-collapsible=offcanvas]_&]:-right-2',
             '[[data-side=right][data-collapsible=offcanvas]_&]:-left-2',
+            'group-data-[collapsible=icon]:translate-x-0 group-data-[collapsible=icon]:after:left-full group-data-[collapsible=icon]:after:w-[1px]',
+            '[[data-side=left][data-collapsible=icon]_&]:right-0 [[data-side=left][data-collapsible=icon]_&]:translate-x-0',
+            '[[data-side=right][data-collapsible=icon]_&]:left-0 [[data-side=right][data-collapsible=icon]_&]:translate-x-0',
             'hover:after:w-[4px] hover:after:bg-sidebar-accent',
+            'group-data-[collapsible=icon]:hover:after:w-[2px]',
             'after:transition-all after:duration-200',
             'hover:bg-sidebar/5',
             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring',
@@ -317,7 +322,7 @@ const SidebarInset = React.forwardRef<HTMLDivElement, React.ComponentProps<'main
     <main
       ref={ref}
       className={cn(
-        'relative flex min-h-svh flex-1 flex-col bg-background',
+        'relative flex min-h-svh min-w-0 flex-1 flex-col overflow-x-hidden bg-background',
         'peer-data-[variant=inset]:min-h-[calc(100svh-theme(spacing.4))] md:peer-data-[variant=inset]:m-2 md:peer-data-[state=collapsed]:peer-data-[variant=inset]:ml-2 md:peer-data-[variant=inset]:ml-0 md:peer-data-[variant=inset]:rounded-xl md:peer-data-[variant=inset]:shadow',
         className,
       )}

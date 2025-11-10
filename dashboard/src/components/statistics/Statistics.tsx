@@ -19,7 +19,7 @@ interface StatisticsProps {
 
 export default function Statistics({ data, isLoading, error, selectedServer, is_sudo }: StatisticsProps) {
   const { t } = useTranslation()
-  
+
   // Add state for chart refresh
   const [chartRefreshKey, setChartRefreshKey] = useState(0)
   const resizeTimeoutRef = useRef<NodeJS.Timeout>()
@@ -39,7 +39,8 @@ export default function Statistics({ data, isLoading, error, selectedServer, is_
   const { data: nodeStats, isLoading: isLoadingNodeStats } = useRealtimeNodeStats(selectedNodeId || 0, {
     query: {
       enabled: is_sudo && !!selectedNodeId, // Only fetch node stats for sudo admins with selected node
-      refetchInterval: 5000, // Update every 5 seconds
+      refetchInterval: 1500, // Update every 1.5 seconds for faster realtime updates
+      staleTime: 1000, // Consider data stale after 1 second
     },
   })
 
@@ -56,7 +57,7 @@ export default function Statistics({ data, isLoading, error, selectedServer, is_
   // Listen for window resize events
   useEffect(() => {
     window.addEventListener('resize', handleResize)
-    
+
     // Listen for sidebar toggle events
     const handleSidebarToggle = () => {
       setTimeout(() => setChartRefreshKey(k => k + 1), 300) // Wait for animation to complete
@@ -127,12 +128,7 @@ export default function Statistics({ data, isLoading, error, selectedServer, is_
           <UserSubUpdatePieChart />
         </div>
         <div className="transform-gpu animate-slide-up" style={{ animationDuration: '500ms', animationDelay: '320ms', animationFillMode: 'both' }}>
-          <AreaCostumeChart 
-            key={chartRefreshKey} 
-            nodeId={selectedNodeId} 
-            currentStats={currentStats} 
-            realtimeStats={actualSelectedServer === 'master' ? data : nodeStats || undefined} 
-          />
+          <AreaCostumeChart key={chartRefreshKey} nodeId={selectedNodeId} currentStats={currentStats} realtimeStats={actualSelectedServer === 'master' ? data : nodeStats || undefined} />
         </div>
       </div>
     </div>
@@ -177,4 +173,3 @@ function StatisticsSkeletons({ is_sudo }: { is_sudo: boolean }) {
     </div>
   )
 }
-

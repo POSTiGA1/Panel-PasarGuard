@@ -82,7 +82,7 @@ export default function SystemStatisticsSection({ currentStats }: SystemStatisti
       className={cn(
         'grid h-full w-full gap-3 sm:gap-4 lg:gap-6',
         // Responsive grid: 1 column on mobile, 2 on small tablet, 3 on large tablet and desktop
-        'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3',
+        'grid-cols-1 sm:grid-cols-2 xl:grid-cols-3',
         // Ensure equal height for all cards
         'auto-rows-fr',
       )}
@@ -167,7 +167,7 @@ export default function SystemStatisticsSection({ currentStats }: SystemStatisti
       </div>
 
       {/* Total Traffic / Network Speed (depends on whether it's master or node stats) */}
-      <div className="h-full w-full animate-fade-in" style={{ animationDuration: '600ms', animationDelay: '250ms' }}>
+      <div className="h-full w-full animate-fade-in sm:col-span-2 lg:col-span-1" style={{ animationDuration: '600ms', animationDelay: '250ms' }}>
         <Card dir={dir} className="group relative h-full w-full overflow-hidden rounded-lg border transition-all duration-300 hover:shadow-lg">
           <div
             className={cn(

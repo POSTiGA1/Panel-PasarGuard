@@ -2,7 +2,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
@@ -254,9 +254,7 @@ const ArrayInput = memo<ArrayInputProps>(({ field, placeholder, label, infoConte
             <PopoverContent className="w-[280px] p-3 sm:w-[320px]" side="top" align="start" sideOffset={5}>
               <div className="space-y-1.5">
                 <h4 className="mb-2 text-[12px] font-medium">{t('hostsDialog.variables.title')}</h4>
-                <div className="max-h-[60vh] space-y-1 overflow-y-auto pr-1">
-              {infoContent}
-                </div>
+                <div className="max-h-[60vh] space-y-1 overflow-y-auto pr-1">{infoContent}</div>
               </div>
             </PopoverContent>
           </Popover>
@@ -554,9 +552,8 @@ const HostModal: React.FC<HostModalProps> = ({ isDialogOpen, onOpenChange, onSub
   const { data: hosts = [] } = useQuery({
     queryKey: ['getHostsQueryKey'],
     queryFn: () => getHosts(),
-    enabled: isTransportOpen, // Only fetch when transport section is open
-    refetchOnWindowFocus: false,
-    select: data => data.filter(host => host.id != null), // Filter out hosts with null IDs
+    enabled: isTransportOpen,
+    select: data => data.filter(host => host.id != null),
   })
 
   // No automatic refresh when dialog opens - only fetch on specific actions
@@ -605,12 +602,12 @@ const HostModal: React.FC<HostModalProps> = ({ isDialogOpen, onOpenChange, onSub
     }
   }
 
-
   return (
     <Dialog open={isDialogOpen} onOpenChange={handleModalOpenChange}>
       <DialogContent className="h-full w-full max-w-2xl sm:max-h-[95dvh] sm:py-4" onOpenAutoFocus={e => e.preventDefault()}>
         <DialogHeader>
-          <DialogTitle className={cn(dir === 'rtl' ? 'text-right' : 'text-left')}>{editingHost ? t('editHost.title') : t('hostsDialog.addHost')}</DialogTitle>
+          <DialogTitle className={cn('mt-2', dir === 'rtl' ? 'text-right' : 'text-left')}>{editingHost ? t('editHost.title') : t('hostsDialog.addHost')}</DialogTitle>
+          <DialogDescription className="sr-only">Modify the host settings below</DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">

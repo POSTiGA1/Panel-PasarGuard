@@ -144,14 +144,17 @@ export const DataTable = memo(<TData extends UserResponse, TValue>({ columns, da
                         <TableCell
                           key={cell.id}
                           className={cn(
-                            'whitespace-nowrap py-2 text-sm',
-                            index <= 1 && 'max-w-[calc(100vw-50px-32px-100px-48px)] md:py-2',
-                            index === 2 && 'w-[120px] !p-0 px-1',
+                            'text-sm',
+                            index !== 2 && 'whitespace-nowrap',
+                            index === 2 && 'md:whitespace-nowrap',
+                            index !== 2 && 'py-1.5',
+                            index <= 1 && 'max-w-[calc(100vw-50px-32px-100px-60px)] md:py-2',
+                            index === 2 && 'min-w-[100px] max-w-full md:w-[450px]',
                             index === 3 && 'w-8',
-                            index === 3 && isRTL ? 'pr-0' : index === 3 && !isRTL && 'pl-0',
+                            index === 3 && "!p-0",
                             index >= 4 && 'hidden !p-0 md:table-cell',
                             cell.column.id === 'chevron' && 'table-cell md:hidden',
-                            isRTL ? 'pl-1.5 sm:pl-3' : 'pr-1.5 sm:pr-3',
+                            index !== 2 && (isRTL ? 'pl-1.5 sm:pl-3' : 'pr-1.5 sm:pr-3'),
                           )}
                         >
                           {cell.column.id === 'chevron' ? (

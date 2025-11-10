@@ -23,7 +23,15 @@ from app.db.crud.node import (
 from app.db.crud.user import get_user
 from app.db.models import Node, NodeStatus
 from app.models.admin import AdminDetails
-from app.models.node import NodeCreate, NodeModify, NodeNotification, NodeResponse, UsageTable
+from app.models.node import (
+    NodeCreate,
+    NodeModify,
+    NodeNotification,
+    NodeResponse,
+    UsageTable,
+    UserIPList,
+    UserIPListAll,
+)
 from app.models.stats import NodeRealtimeStats, NodeStatsList, NodeUsageStatsList, Period
 from app.node import core_users, node_manager
 from app.operation import BaseOperation
@@ -414,27 +422,56 @@ class NodeOperation(BaseOperation):
 
         return {node_id: stats.value}
 
-    async def get_user_ip_list_by_node(
-        self, db: AsyncSession, node_id: Node, username: str
-    ) -> dict[int, dict[str, int]]:
+    async def get_user_ip_list_by_node(self, db: AsyncSession, node_id: Node, username: str) -> UserIPList:
         db_user = await get_user(db, username=username)
         if db_user is None:
             await self.raise_error(message="User not found", code=404)
 
-        node = await node_manager.get_node(node_id)
+        email = f"{db_user.id}.{db_user.username}"
+        ips = await self._get_node_user_ip_list_safe(node_id, email)
 
-        if node is None:
-            await self.raise_error(message="Node not found", code=404)
+        if ips is None:
+            await self.raise_error(message="Node unavailable or user not found", code=404)
 
+        return UserIPList(ips=ips)
+
+    async def get_user_ip_list_all_nodes(self, db: AsyncSession, username: str) -> UserIPListAll:
+        db_user = await get_user(db, username=username)
+        if db_user is None:
+            await self.raise_error(message="User not found", code=404)
+
+        nodes = await node_manager.get_healthy_nodes()
+        email = f"{db_user.id}.{db_user.username}"
+
+        ip_list_tasks = {id: asyncio.create_task(self._get_node_user_ip_list_safe(id, email)) for id, _ in nodes}
+
+        await asyncio.gather(*ip_list_tasks.values(), return_exceptions=True)
+
+        results = {}
+        for node_id, task in ip_list_tasks.items():
+            if task.exception() or task.result() is None:
+                continue
+            else:
+                results[node_id] = UserIPList(ips=task.result())
+
+        return UserIPListAll(nodes=results)
+
+    async def _get_node_user_ip_list_safe(self, node_id: int, email: str) -> dict[str, int] | None:
+        """Wrapper method that returns None instead of raising exceptions"""
         try:
-            stats = await node.get_user_online_ip_list(email=f"{db_user.id}.{db_user.username}")
+            node = await node_manager.get_node(node_id)
+            if node is None:
+                return None
+
+            stats = await node.get_user_online_ip_list(email=email)
+            if stats is None:
+                return None
+
+            return stats.ips
         except NodeAPIError as e:
-            await self.raise_error(message=e.detail, code=e.code)
-
-        if stats is None:
-            await self.raise_error(message="Stats not found", code=404)
-
-        return {node_id: stats.ips}
+            if e.code != 404:
+                logger.error(f"Error getting IP list for user {email} on node {node_id}: {e}")
+            return None
 
     async def sync_node_users(self, db: AsyncSession, node_id: int, flush_users: bool = False) -> NodeResponse:
         db_node = await self.get_validated_node(db, node_id=node_id)

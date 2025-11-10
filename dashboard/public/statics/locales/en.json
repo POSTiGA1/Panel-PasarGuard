@@ -14,6 +14,7 @@
   "hosts": "Hosts",
   "success": "Success",
   "error": "Error",
+  "tutorial": "View tutorial",
   "username": "Username",
   "modifying": "Modifying...",
   "removing": "Removing...",
@@ -163,7 +164,7 @@
         "title": "Telegram",
         "description": "Configure Telegram notifications for important system activities",
         "apiToken": "Bot API Token",
-        "adminId": "Admin Chat ID",
+        "chatId": "Chat ID",
         "channelId": "Channel ID",
         "topicId": "Topic ID"
       },
@@ -195,7 +196,6 @@
         "title": "General Settings",
         "description": "Basic subscription configuration options",
         "urlPrefix": "URL Prefix",
-        "urlPrefixPlaceholder": "sub",
         "urlPrefixDescription": "Base URL for subscription links",
         "updateInterval": "Update Interval (hours)",
         "updateIntervalDescription": "How often clients should check for updates",
@@ -689,6 +689,7 @@
   "disabled": "disabled",
   "expire": "Expire",
   "expireDate": "Expire Date",
+  "lastOnline": "Last Online",
   "expires": "Expires in {{time}}",
   "expired": "Expired {{time}}",
   "sortOptions": "Sort Options",
@@ -704,6 +705,10 @@
     "usage": {
       "low": "Data Usage (Low to High)",
       "high": "Data Usage (High to Low)"
+    },
+    "online": {
+      "oldest": "Last Online (Oldest First)",
+      "newest": "Last Online (Newest First)"
     }
   },
   "header.donation": "Donation",
@@ -1079,6 +1084,7 @@
   "subscriptionClients": {
     "title": "Subscription Clients",
     "viewAllClients": "View Clients",
+    "clients": "Clients",
     "total": "Total: {{count}} clients",
     "showing": "Showing last {{count}} accesses",
     "noClients": "No subscription clients found",
@@ -1086,6 +1092,25 @@
     "knownClient": "Known",
     "unknown": "Unknown",
     "error": "Failed to load subscription clients"
+  },
+  "userAllIPs": {
+    "title": "IP Addresses - {{username}}",
+    "description": "View all IP addresses associated with user {{username}} across all nodes",
+    "viewAllIPs": "View All IPs",
+    "ipAddresses": "IP addresses",
+    "nodeId": "Node #{{nodeId}}",
+    "totalIPs": "{{count}} IP address",
+    "totalIPs_plural": "{{count}} IP addresses",
+    "lastSeen": "Last seen",
+    "refresh": "Refresh",
+    "autoRefresh": "Auto-refresh: every {{seconds}} seconds",
+    "refreshed": "IP addresses updated",
+    "refreshFailed": "Failed to refresh IP addresses",
+    "userNotFound": "User \"{{username}}\" not found or currently offline",
+    "errorLoading": "Unable to load IP addresses: {{message}}",
+    "noIPs": "No active IP addresses found. This user may not be currently connected to any nodes.",
+    "ipCopied": "IP address copied to clipboard",
+    "clickToCopy": "Click to copy IP address"
   },
   "search": "Search",
   "status.active": "Active",
@@ -1199,6 +1224,19 @@
   "usersTable.noUserMatched": "It seems there is no user matched with what you are looking for",
   "usersTable.status": "Status",
   "usersTable.total": "Total",
+  "autoRefresh": {
+    "label": "Auto refresh",
+    "currentSelection": "Current: {{value}}",
+    "off": "Manual refresh only",
+    "offShort": "Off",
+    "shortSeconds": "{{count}}s",
+    "shortMinutes": "{{count}}m",
+    "15Seconds": "Every 15 seconds",
+    "30Seconds": "Every 30 seconds",
+    "1Minute": "Every minute",
+    "5Minutes": "Every 5 minutes",
+    "refreshNow": "Refresh now"
+  },
   "statistics.system": "System",
   "statistics.totalTraffic": "Total Traffic",
   "statistics.networkSpeed": "Network Speed",
@@ -1303,6 +1341,7 @@
     "statusChecking": "Checking...",
     "reconnect": "Reconnect",
     "reconnecting": "Reconnecting...",
+    "reconnectFailed": "Failed to reconnect node",
     "sync": "Sync",
     "syncing": "Syncing...",
     "syncSuccess": "Node synchronized successfully",

@@ -3,7 +3,7 @@
  * Do not edit manually.
  * PasarGuardAPI
  * Unified GUI Censorship Resistant Solution
- * OpenAPI spec version: 1.4.1
+ * OpenAPI spec version: 1.6.1
  */
 import { useMutation, useQuery } from '@tanstack/react-query'
 import type {
@@ -92,8 +92,6 @@ export type ClearUsageDataParams = {
   start?: string | null
   end?: string | null
 }
-
-export type UserOnlineIpList200 = { [key: string]: { [key: string]: number } }
 
 export type UserOnlineStats200 = { [key: string]: number }
 
@@ -190,13 +188,6 @@ export type XrayMuxSettingsInputXudpConcurrency = number | null
 
 export type XrayMuxSettingsInputConcurrency = number | null
 
-export interface XrayMuxSettingsInput {
-  enabled?: boolean
-  concurrency?: XrayMuxSettingsInputConcurrency
-  xudp_concurrency?: XrayMuxSettingsInputXudpConcurrency
-  xudp_proxy_udp_443?: Xudp
-}
-
 export interface XrayFragmentSettings {
   /** @pattern ^(:?tlshello|[\d-]{1,16})$ */
   packets: string
@@ -214,6 +205,13 @@ export const Xudp = {
   allow: 'allow',
   skip: 'skip',
 } as const
+
+export interface XrayMuxSettingsInput {
+  enabled?: boolean
+  concurrency?: XrayMuxSettingsInputConcurrency
+  xudp_concurrency?: XrayMuxSettingsInputXudpConcurrency
+  xudp_proxy_udp_443?: Xudp
+}
 
 export type XTLSFlows = (typeof XTLSFlows)[keyof typeof XTLSFlows]
 
@@ -664,6 +662,24 @@ export interface UserModify {
   status?: UserModifyStatus
 }
 
+export type UserIPListIps = { [key: string]: number }
+
+/**
+ * User IP list - mapping of IP addresses to connection counts
+ */
+export interface UserIPList {
+  ips: UserIPListIps
+}
+
+export type UserIPListAllNodes = { [key: string]: UserIPList | null }
+
+/**
+ * User IP lists for all nodes
+ */
+export interface UserIPListAll {
+  nodes: UserIPListAllNodes
+}
+
 export type UserDataLimitResetStrategy = (typeof UserDataLimitResetStrategy)[keyof typeof UserDataLimitResetStrategy]
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
@@ -750,8 +766,6 @@ export interface TransportSettingsOutput {
 
 export type TransportSettingsInputWebsocketSettings = WebSocketSettings | null
 
-export type TransportSettingsInputTcpSettings = TcpSettings | null
-
 export type TransportSettingsInputKcpSettings = KCPSettings | null
 
 export type TransportSettingsInputGrpcSettings = GRPCSettings | null
@@ -803,6 +817,8 @@ export interface TcpSettings {
   request?: TcpSettingsRequest
   response?: TcpSettingsResponse
 }
+
+export type TransportSettingsInputTcpSettings = TcpSettings | null
 
 export type SystemStatsCpuUsage = number | null
 
@@ -1774,6 +1790,26 @@ export type BaseHostMuxSettings = MuxSettingsOutput | null
 
 export type BaseHostTransportSettings = TransportSettingsOutput | null
 
+export type BaseHostHttpHeadersAnyOf = { [key: string]: string }
+
+export type BaseHostHttpHeaders = BaseHostHttpHeadersAnyOf | null
+
+export type BaseHostAllowinsecure = boolean | null
+
+export type BaseHostAlpn = ProxyHostALPN[] | null
+
+export type BaseHostPath = string | null
+
+export type BaseHostHost = string[] | null
+
+export type BaseHostSni = string[] | null
+
+export type BaseHostPort = number | null
+
+export type BaseHostInboundTag = string | null
+
+export type BaseHostId = number | null
+
 export interface BaseHost {
   id?: BaseHostId
   remark: string
@@ -1799,26 +1835,6 @@ export interface BaseHost {
   status?: BaseHostStatus
   ech_config_list?: BaseHostEchConfigList
 }
-
-export type BaseHostHttpHeadersAnyOf = { [key: string]: string }
-
-export type BaseHostHttpHeaders = BaseHostHttpHeadersAnyOf | null
-
-export type BaseHostAllowinsecure = boolean | null
-
-export type BaseHostAlpn = ProxyHostALPN[] | null
-
-export type BaseHostPath = string | null
-
-export type BaseHostHost = string[] | null
-
-export type BaseHostSni = string[] | null
-
-export type BaseHostPort = number | null
-
-export type BaseHostInboundTag = string | null
-
-export type BaseHostId = number | null
 
 export type ApplicationOutputDescription = { [key: string]: string }
 
@@ -1967,31 +1983,6 @@ export interface AdminCreate {
   support_url?: AdminCreateSupportUrl
   notification_enable?: AdminCreateNotificationEnable
   username: string
-}
-
-export type AdminContactInfoNotificationEnable = UserNotificationEnable | null
-
-export type AdminContactInfoSupportUrl = string | null
-
-export type AdminContactInfoProfileTitle = string | null
-
-export type AdminContactInfoSubDomain = string | null
-
-export type AdminContactInfoDiscordWebhook = string | null
-
-export type AdminContactInfoTelegramId = number | null
-
-/**
- * Base model containing the core admin identification fields.
- */
-export interface AdminContactInfo {
-  username: string
-  telegram_id?: AdminContactInfoTelegramId
-  discord_webhook?: AdminContactInfoDiscordWebhook
-  sub_domain?: AdminContactInfoSubDomain
-  profile_title?: AdminContactInfoProfileTitle
-  support_url?: AdminContactInfoSupportUrl
-  notification_enable?: AdminContactInfoNotificationEnable
 }
 
 /**
@@ -4584,6 +4575,71 @@ export function useRealtimeNodesStats<TData = Awaited<ReturnType<typeof realtime
 }
 
 /**
+ * Retrieve user ips from all nodes.
+ * @summary User Online Ip List All Nodes
+ */
+export const userOnlineIpListAllNodes = (username: string, signal?: AbortSignal) => {
+  return orvalFetcher<UserIPListAll>({ url: `/api/node/online_stats/${username}/ip`, method: 'GET', signal })
+}
+
+export const getUserOnlineIpListAllNodesQueryKey = (username: string) => {
+  return [`/api/node/online_stats/${username}/ip`] as const
+}
+
+export const getUserOnlineIpListAllNodesQueryOptions = <TData = Awaited<ReturnType<typeof userOnlineIpListAllNodes>>, TError = ErrorType<Unauthorized | Forbidden | HTTPValidationError>>(
+  username: string,
+  options?: { query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof userOnlineIpListAllNodes>>, TError, TData>> },
+) => {
+  const { query: queryOptions } = options ?? {}
+
+  const queryKey = queryOptions?.queryKey ?? getUserOnlineIpListAllNodesQueryKey(username)
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof userOnlineIpListAllNodes>>> = ({ signal }) => userOnlineIpListAllNodes(username, signal)
+
+  return { queryKey, queryFn, enabled: !!username, ...queryOptions } as UseQueryOptions<Awaited<ReturnType<typeof userOnlineIpListAllNodes>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+}
+
+export type UserOnlineIpListAllNodesQueryResult = NonNullable<Awaited<ReturnType<typeof userOnlineIpListAllNodes>>>
+export type UserOnlineIpListAllNodesQueryError = ErrorType<Unauthorized | Forbidden | HTTPValidationError>
+
+export function useUserOnlineIpListAllNodes<TData = Awaited<ReturnType<typeof userOnlineIpListAllNodes>>, TError = ErrorType<Unauthorized | Forbidden | HTTPValidationError>>(
+  username: string,
+  options: {
+    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof userOnlineIpListAllNodes>>, TError, TData>> &
+      Pick<DefinedInitialDataOptions<Awaited<ReturnType<typeof userOnlineIpListAllNodes>>, TError, TData>, 'initialData'>
+  },
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useUserOnlineIpListAllNodes<TData = Awaited<ReturnType<typeof userOnlineIpListAllNodes>>, TError = ErrorType<Unauthorized | Forbidden | HTTPValidationError>>(
+  username: string,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof userOnlineIpListAllNodes>>, TError, TData>> &
+      Pick<UndefinedInitialDataOptions<Awaited<ReturnType<typeof userOnlineIpListAllNodes>>, TError, TData>, 'initialData'>
+  },
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useUserOnlineIpListAllNodes<TData = Awaited<ReturnType<typeof userOnlineIpListAllNodes>>, TError = ErrorType<Unauthorized | Forbidden | HTTPValidationError>>(
+  username: string,
+  options?: { query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof userOnlineIpListAllNodes>>, TError, TData>> },
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary User Online Ip List All Nodes
+ */
+
+export function useUserOnlineIpListAllNodes<TData = Awaited<ReturnType<typeof userOnlineIpListAllNodes>>, TError = ErrorType<Unauthorized | Forbidden | HTTPValidationError>>(
+  username: string,
+  options?: { query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof userOnlineIpListAllNodes>>, TError, TData>> },
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getUserOnlineIpListAllNodesQueryOptions(username, options)
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+  query.queryKey = queryOptions.queryKey
+
+  return query
+}
+
+/**
  * Retrieve user online stats by node.
  * @summary User Online Stats
  */
@@ -4658,7 +4714,7 @@ export function useUserOnlineStats<TData = Awaited<ReturnType<typeof userOnlineS
  * @summary User Online Ip List
  */
 export const userOnlineIpList = (nodeId: number, username: string, signal?: AbortSignal) => {
-  return orvalFetcher<UserOnlineIpList200>({ url: `/api/node/${nodeId}/online_stats/${username}/ip`, method: 'GET', signal })
+  return orvalFetcher<UserIPList>({ url: `/api/node/${nodeId}/online_stats/${username}/ip`, method: 'GET', signal })
 }
 
 export const getUserOnlineIpListQueryKey = (nodeId: number, username: string) => {

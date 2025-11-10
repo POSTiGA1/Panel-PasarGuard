@@ -1,26 +1,26 @@
-import { useForm, useFieldArray } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
-import { useTranslation } from 'react-i18next'
-import { useEffect, useState } from 'react'
+import { SortableApplication } from '@/components/apps/sortable-application'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
-import { Switch } from '@/components/ui/switch'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
-import { Badge } from '@/components/ui/badge'
-import { Plus, Trash2, Filter, FileText, Link, Clock, HelpCircle, User, Settings, Code, FileCode2, Sword, Shield, Lock, GripVertical, RotateCcw, Megaphone, ExternalLink } from 'lucide-react'
-import { useSettingsContext } from './_dashboard.settings'
-import { ConfigFormat } from '@/service/api'
-import { toast } from 'sonner'
+import { Switch } from '@/components/ui/switch'
 import { VariablesPopover } from '@/components/ui/variables-popover'
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core'
-import { SortableContext, sortableKeyboardCoordinates, useSortable, rectSortingStrategy } from '@dnd-kit/sortable'
-import { CSS } from '@dnd-kit/utilities'
-import { SortableApplication } from '@/components/apps/sortable-application'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import useDirDetection from '@/hooks/use-dir-detection'
+import { ConfigFormat } from '@/service/api'
+import { closestCenter, DndContext, DragEndEvent, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
+import { rectSortingStrategy, SortableContext, sortableKeyboardCoordinates, useSortable } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { Clock, Code, ExternalLink, FileCode2, FileText, Filter, GripVertical, HelpCircle, Link, Lock, Megaphone, Plus, RotateCcw, Settings, Shield, Sword, Trash2, User } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { useFieldArray, useForm } from 'react-hook-form'
+import { useTranslation } from 'react-i18next'
+import { toast } from 'sonner'
+import { z } from 'zod'
+import { useSettingsContext } from './_dashboard.settings'
 
 // Enhanced validation schema for subscription settings
 const subscriptionSchema = z.object({
@@ -37,31 +37,39 @@ const subscriptionSchema = z.object({
       target: z.enum(['links', 'links_base64', 'xray', 'sing_box', 'clash', 'clash_meta', 'outline', 'block']),
     }),
   ),
-  applications: z.array(
-    z.object({
-      name: z.string().min(1, 'Application name is required').max(32, 'Application name must be 32 characters or less'),
-      icon_url: z.string().url('Please enter a valid URL').optional().or(z.literal('')),
-      import_url: z.string().refine(
-        (url) => {
-          if (!url || url === '') return true
-          return url.includes('{url}')
-        },
-        {
-          message: 'Import URL must contain {url} placeholder for URL replacement'
-        }
-      ).optional().or(z.literal('')),
-      description: z.record(z.string()).optional(),
-      recommended: z.boolean().optional(),
-      platform: z.enum(['android', 'ios', 'windows', 'macos', 'linux', 'appletv', 'androidtv']),
-      download_links: z.array(
-        z.object({
-          name: z.string().min(1, 'Download link name is required').max(64, 'Download link name must be 64 characters or less'),
-          url: z.string().url('Please enter a valid URL'),
-          language: z.enum(['fa', 'en', 'ru', 'zh']),
-        }),
-      ).min(1, 'At least one download link is required'),
-    }),
-  ).optional(),
+  applications: z
+    .array(
+      z.object({
+        name: z.string().min(1, 'Application name is required').max(32, 'Application name must be 32 characters or less'),
+        icon_url: z.string().url('Please enter a valid URL').optional().or(z.literal('')),
+        import_url: z
+          .string()
+          .refine(
+            url => {
+              if (!url || url === '') return true
+              return url.includes('{url}')
+            },
+            {
+              message: 'Import URL must contain {url} placeholder for URL replacement',
+            },
+          )
+          .optional()
+          .or(z.literal('')),
+        description: z.record(z.string()).optional(),
+        recommended: z.boolean().optional(),
+        platform: z.enum(['android', 'ios', 'windows', 'macos', 'linux', 'appletv', 'androidtv']),
+        download_links: z
+          .array(
+            z.object({
+              name: z.string().min(1, 'Download link name is required').max(64, 'Download link name must be 64 characters or less'),
+              url: z.string().url('Please enter a valid URL'),
+              language: z.enum(['fa', 'en', 'ru', 'zh']),
+            }),
+          )
+          .min(1, 'At least one download link is required'),
+      }),
+    )
+    .optional(),
   manual_sub_request: z
     .object({
       links: z.boolean().optional(),
@@ -88,7 +96,6 @@ const configFormatOptions = [
   { value: 'block', label: 'settings.subscriptions.configFormats.block', icon: '🚫' },
 ]
 
-
 // Default Applications Dataset (mapped from provided data)
 const defaultApplicationsData = {
   operatingSystems: [
@@ -98,12 +105,15 @@ const defaultApplicationsData = {
         {
           name: 'Streisand',
           logo: 'https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/1e/29/e0/1e29e04f-273b-9186-5f12-9bbe48c0fce2/AppIcon-0-0-1x_U007epad-0-0-0-1-0-85-220.png/460x0w.webp',
-          description: 'Flexible proxy client with rule-based setup, multiple protocols, and custom DNS. Supports VLESS(Reality), VMess, Trojan, Shadowsocks, Socks, SSH, Hysteria(V2), TUIC, Wireguard.',
-          faDescription: 'کلاینت پراکسی انعطاف‌پذیر با قوانین، پشتیبانی از پروتکل‌های متعدد و DNS سفارشی. پشتیبانی از VLESS(Reality)، VMess، Trojan، Shadowsocks، Socks، SSH، Hysteria(V2)، TUIC، WireGuard.',
-          ruDescription: 'Гибкий прокси‑клиент с правилами, поддержкой множества протоколов и кастомным DNS. Поддерживаются VLESS(Reality), VMess, Trojan, Shadowsocks, Socks, SSH, Hysteria(V2), TUIC, Wireguard.',
+          description:
+            'Flexible proxy client with rule-based setup, multiple protocols, and custom DNS. Supports VLESS(Reality), VMess, Trojan, Shadowsocks, Socks, SSH, Hysteria(V2), TUIC, Wireguard.',
+          faDescription:
+            'کلاینت پراکسی انعطاف‌پذیر با قوانین، پشتیبانی از پروتکل‌های متعدد و DNS سفارشی. پشتیبانی از VLESS(Reality)، VMess، Trojan، Shadowsocks، Socks، SSH، Hysteria(V2)، TUIC، WireGuard.',
+          ruDescription:
+            'Гибкий прокси‑клиент с правилами, поддержкой множества протоколов и кастомным DNS. Поддерживаются VLESS(Reality), VMess, Trojan, Shadowsocks, Socks, SSH, Hysteria(V2), TUIC, Wireguard.',
           zhDescription: '灵活的代理客户端，支持基于规则的配置、多种协议以及自定义 DNS。支持 VLESS(Reality)、VMess、Trojan、Shadowsocks、Socks、SSH、Hysteria(V2)、TUIC、Wireguard。',
           configLink: 'streisand://import/{url}',
-          downloadLink: 'https://apps.apple.com/us/app/streisand/id6450534064'
+          downloadLink: 'https://apps.apple.com/us/app/streisand/id6450534064',
         },
         {
           name: 'SingBox',
@@ -113,7 +123,7 @@ const defaultApplicationsData = {
           ruDescription: 'Клиент, обеспечивающий безопасную маршрутизацию трафика.',
           zhDescription: '提供安全流量路由的平台客户端。',
           configLink: 'sing-box://import-remote-profile?url={url}',
-          downloadLink: 'https://apps.apple.com/us/app/sing-box-vt/id6673731168'
+          downloadLink: 'https://apps.apple.com/us/app/sing-box-vt/id6673731168',
         },
         {
           name: 'Shadowrocket',
@@ -122,9 +132,9 @@ const defaultApplicationsData = {
           faDescription: 'Shadowrocket یک ابزار پروکسی قانون‌محور برای iOS است.',
           ruDescription: 'Прокси‑клиент для iOS с маршрутизацией по правилам.',
           zhDescription: '基于规则的 iOS 代理工具客户端。',
-          downloadLink: 'https://apps.apple.com/us/app/shadowrocket/id932747118'
-        }
-      ]
+          downloadLink: 'https://apps.apple.com/us/app/shadowrocket/id932747118',
+        },
+      ],
     },
     {
       name: 'Android',
@@ -137,7 +147,7 @@ const defaultApplicationsData = {
           ruDescription: 'Клиент V2Ray для устройств Android.',
           zhDescription: '适用于 Android 设备的 V2Ray 客户端。',
           configLink: 'v2rayng://install-config?url={url}',
-          downloadLink: 'https://github.com/2dust/v2rayNG/releases/latest'
+          downloadLink: 'https://github.com/2dust/v2rayNG/releases/latest',
         },
         {
           name: 'SingBox',
@@ -147,9 +157,9 @@ const defaultApplicationsData = {
           ruDescription: 'Клиент, обеспечивающий безопасную маршрутизацию трафика.',
           zhDescription: '提供安全流量路由的平台客户端。',
           configLink: 'sing-box://import-remote-profile?url={url}',
-          downloadLink: 'https://play.google.com/store/apps/details?id=io.nekohasekai.sfa&hl=en'
-        }
-      ]
+          downloadLink: 'https://play.google.com/store/apps/details?id=io.nekohasekai.sfa&hl=en',
+        },
+      ],
     },
     {
       name: 'Windows',
@@ -161,7 +171,7 @@ const defaultApplicationsData = {
           faDescription: 'v2rayN یک کلاینت V2Ray برای ویندوز با پشتیبانی از رابط کاربری است.',
           ruDescription: 'V2Ray клиент для Windows с графическим интерфейсом.',
           zhDescription: '带有图形界面的 Windows V2Ray 客户端。',
-          downloadLink: 'https://github.com/2dust/v2rayN/releases/latest'
+          downloadLink: 'https://github.com/2dust/v2rayN/releases/latest',
         },
         {
           name: 'FlClash',
@@ -170,9 +180,9 @@ const defaultApplicationsData = {
           faDescription: 'Flclash یک کلاینت GUI چندسکویی برای clash core است.',
           ruDescription: 'Кроссплатформенный GUI-клиент для clash core.',
           zhDescription: '跨平台 clash core 图形界面客户端。',
-          downloadLink: 'https://github.com/chen08209/FlClash/releases/latest'
-        }
-      ]
+          downloadLink: 'https://github.com/chen08209/FlClash/releases/latest',
+        },
+      ],
     },
     {
       name: 'Linux',
@@ -184,7 +194,7 @@ const defaultApplicationsData = {
           faDescription: 'Flclash یک کلاینت GUI چندسکویی برای clash core است.',
           ruDescription: 'Кроссплатформенный GUI-клиент для clash core.',
           zhDescription: '跨平台 clash core 图形界面客户端。',
-          downloadLink: 'https://github.com/chen08209/FlClash/releases/latest'
+          downloadLink: 'https://github.com/chen08209/FlClash/releases/latest',
         },
         {
           name: 'SingBox',
@@ -194,11 +204,11 @@ const defaultApplicationsData = {
           ruDescription: 'Клиент, обеспечивающий безопасную маршрутизацию трафика.',
           zhDescription: '提供安全流量路由的平台客户端。',
           configLink: 'sing-box://import-remote-profile?url={url}',
-          downloadLink: 'https://github.com/SagerNet/sing-box/releases/latest'
-        }
-      ]
-    }
-  ]
+          downloadLink: 'https://github.com/SagerNet/sing-box/releases/latest',
+        },
+      ],
+    },
+  ],
 }
 
 const mapOsNameToPlatform = (engName: string): 'android' | 'ios' | 'windows' | 'macos' | 'linux' | 'appletv' | 'androidtv' => {
@@ -245,7 +255,7 @@ const buildDefaultApplications = () => {
         import_url: app.configLink || '',
         description: {
           en: app.description || '',
-          fa: app.faDescription || (app.description || ''),
+          fa: app.faDescription || app.description || '',
           ru: (app as any).ruDescription || app.description || '',
           zh: (app as any).zhDescription || app.description || '',
         },
@@ -264,29 +274,28 @@ const buildDefaultApplications = () => {
   return apps
 }
 
-
 // Default subscription rules
 const defaultSubscriptionRules: { pattern: string; target: ConfigFormat }[] = [
   {
     pattern: '^([Cc]lash[\\-\\.]?[Vv]erge|[Cc]lash[\\-\\.]?[Mm]eta|[Ff][Ll][Cc]lash|[Mm]ihomo)',
-    target: 'clash_meta'
+    target: 'clash_meta',
   },
   {
     pattern: '^([Cc]lash|[Ss]tash)',
-    target: 'clash'
+    target: 'clash',
   },
   {
     pattern: '^(SFA|SFI|SFM|SFT|[Kk]aring|[Hh]iddify[Nn]ext)|.*[Ss]ing[\\-b]?ox.*',
-    target: 'sing_box'
+    target: 'sing_box',
   },
   {
     pattern: '^(SS|SSR|SSD|SSS|Outline|Shadowsocks|SSconf)',
-    target: 'outline'
+    target: 'outline',
   },
   {
     pattern: '.*',
-    target: 'links_base64'
-  }
+    target: 'links_base64',
+  },
 ]
 
 // Sortable Rule Component
@@ -391,7 +400,6 @@ function SortableRule({ index, onRemove, form, id }: SortableRuleProps) {
     </div>
   )
 }
-
 
 export default function SubscriptionSettings() {
   const { t } = useTranslation()
@@ -543,19 +551,23 @@ export default function SubscriptionSettings() {
     try {
       // Process applications data to ensure proper format
       // Normalize recommended: allow only one per platform
-      const rawApps = (data.applications || []).map(app => ({
-        name: app.name?.trim() || '',
-        icon_url: app.icon_url?.trim() || undefined,
-        import_url: app.import_url?.trim() || undefined,
-        description: app.description || {},
-        recommended: app.recommended || false,
-        platform: app.platform,
-        download_links: (app.download_links || []).map(link => ({
-          name: link.name?.trim() || '',
-          url: link.url?.trim() || '',
-          language: link.language,
-        })).filter(link => link.name && link.url), // Filter out empty links
-      })).filter(app => app.name)
+      const rawApps = (data.applications || [])
+        .map(app => ({
+          name: app.name?.trim() || '',
+          icon_url: app.icon_url?.trim() || undefined,
+          import_url: app.import_url?.trim() || undefined,
+          description: app.description || {},
+          recommended: app.recommended || false,
+          platform: app.platform,
+          download_links: (app.download_links || [])
+            .map(link => ({
+              name: link.name?.trim() || '',
+              url: link.url?.trim() || '',
+              language: link.language,
+            }))
+            .filter(link => link.name && link.url), // Filter out empty links
+        }))
+        .filter(app => app.name)
 
       const platformHasRecommended: Record<string, boolean> = {}
       const processedApplications = rawApps.map(app => {
@@ -681,7 +693,7 @@ export default function SubscriptionSettings() {
     toast.success(
       applicationFields.length === 0
         ? t('settings.subscriptions.applications.loadedDefaults', { defaultValue: 'Defaults loaded' })
-        : t('settings.subscriptions.applications.resetToDefaultSuccess', { defaultValue: 'Applications reset to defaults' })
+        : t('settings.subscriptions.applications.resetToDefaultSuccess', { defaultValue: 'Applications reset to defaults' }),
     )
   }
 
@@ -694,9 +706,11 @@ export default function SubscriptionSettings() {
     const hasEmptyApplication = applicationFields.some(field => !field.name || field.name.trim() === '')
 
     if (hasEmptyApplication) {
-      toast.error(t('settings.subscriptions.applications.duplicateApplication', {
-        defaultValue: 'Please fill in the existing application before adding a new one'
-      }))
+      toast.error(
+        t('settings.subscriptions.applications.duplicateApplication', {
+          defaultValue: 'Please fill in the existing application before adding a new one',
+        }),
+      )
       return
     }
     // Open modal instead of directly appending
@@ -712,9 +726,10 @@ export default function SubscriptionSettings() {
       toast.error(t('validation.required', { field: t('settings.subscriptions.applications.name') }))
       return
     }
-    const links = (newLinkName.trim() && newLinkUrl.trim())
-      ? [{ name: newLinkName.trim(), url: newLinkUrl.trim(), language: newLinkLang }]
-      : [{ name: t('settings.subscriptions.applications.addDownloadLink'), url: '', language: 'en' as const }]
+    const links =
+      newLinkName.trim() && newLinkUrl.trim()
+        ? [{ name: newLinkName.trim(), url: newLinkUrl.trim(), language: newLinkLang }]
+        : [{ name: t('settings.subscriptions.applications.addDownloadLink'), url: '', language: 'en' as const }]
     appendApplication({
       name: newAppName.trim(),
       icon_url: newAppIconUrl.trim(),
@@ -839,7 +854,7 @@ export default function SubscriptionSettings() {
                       {t('settings.subscriptions.general.urlPrefix')}
                     </FormLabel>
                     <FormControl>
-                      <Input placeholder={t('settings.subscriptions.general.urlPrefixPlaceholder')} {...field} className="font-mono" />
+                      <Input placeholder="https://example.com" {...field} className="font-mono" />
                     </FormControl>
                     <FormDescription className="text-sm text-muted-foreground">{t('settings.subscriptions.general.urlPrefixDescription')}</FormDescription>
                     <FormMessage />
@@ -1052,17 +1067,13 @@ export default function SubscriptionSettings() {
               <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                 {/* Group items by platform and render separate SortableContexts to isolate drag-and-drop containers */}
                 {(['ios', 'android', 'windows', 'macos', 'linux', 'appletv', 'androidtv'] as const).map(platformKey => {
-                  const indices = applicationFields
-                    .map((f, idx) => ({ id: f.id, idx }))
-                    .filter(({ idx }) => (form.getValues('applications') as any[])?.[idx]?.platform === platformKey)
+                  const indices = applicationFields.map((f, idx) => ({ id: f.id, idx })).filter(({ idx }) => (form.getValues('applications') as any[])?.[idx]?.platform === platformKey)
                   if (indices.length === 0) return null
                   return (
                     <SortableContext key={platformKey} items={indices.map(i => i.id)} strategy={rectSortingStrategy}>
                       <div className="mb-2 mt-2 flex items-center gap-2 px-1 sm:px-0">
-                        <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                          {t(`settings.subscriptions.applications.platforms.${platformKey}`)}
-                        </span>
-                        <div className="hidden sm:block h-px flex-1 bg-border" />
+                        <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{t(`settings.subscriptions.applications.platforms.${platformKey}`)}</span>
+                        <div className="hidden h-px flex-1 bg-border sm:block" />
                       </div>
                       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                         {indices.map(({ id, idx }) => (
@@ -1239,7 +1250,7 @@ export default function SubscriptionSettings() {
         <Dialog open={isAddAppOpen} onOpenChange={setIsAddAppOpen}>
           <DialogContent className="h-full max-w-full sm:h-auto sm:max-w-[520px]" onOpenAutoFocus={e => e.preventDefault()}>
             <DialogHeader>
-              <DialogTitle className={dir === "rtl" ? "text-right" : "text-left"}>{t('settings.subscriptions.applications.addApplication')}</DialogTitle>
+              <DialogTitle className={dir === 'rtl' ? 'text-right' : 'text-left'}>{t('settings.subscriptions.applications.addApplication')}</DialogTitle>
             </DialogHeader>
             <div className="-mr-4 max-h-[80dvh] overflow-y-auto px-2 pr-4 sm:max-h-[75dvh]">
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -1267,21 +1278,35 @@ export default function SubscriptionSettings() {
                 <div className="space-y-1 sm:col-span-2">
                   <FormLabel className="text-xs text-muted-foreground/80">{t('settings.subscriptions.applications.iconUrl', { defaultValue: 'Icon URL' })}</FormLabel>
                   <div className="flex items-center gap-2">
-                    <Input value={newAppIconUrl} onChange={e => setNewAppIconUrl(e.target.value)} placeholder={t('settings.subscriptions.applications.iconUrlPlaceholder', { defaultValue: 'https://...' })} className="h-8 text-xs font-mono" dir="ltr" />
+                    <Input
+                      value={newAppIconUrl}
+                      onChange={e => setNewAppIconUrl(e.target.value)}
+                      placeholder={t('settings.subscriptions.applications.iconUrlPlaceholder', { defaultValue: 'https://...' })}
+                      className="h-8 font-mono text-xs"
+                      dir="ltr"
+                    />
                     {/* live preview */}
                     {newAppIconUrl && !newAppIconBroken && isValidIconUrl(newAppIconUrl) ? (
                       <img src={newAppIconUrl} alt="icon" className="h-6 w-6 rounded-sm object-cover" onError={() => setNewAppIconBroken(true)} />
                     ) : (
-                      <div className="h-6 w-6 rounded-sm bg-muted text-muted-foreground/80 inline-flex items-center justify-center">
+                      <div className="inline-flex h-6 w-6 items-center justify-center rounded-sm bg-muted text-muted-foreground/80">
                         <span className="text-[10px]">🖼️</span>
                       </div>
                     )}
                   </div>
-                  <FormDescription className="text-xs text-muted-foreground">{t('settings.subscriptions.applications.iconUrlDescription', { defaultValue: 'Optional. Shown next to app name.' })}</FormDescription>
+                  <FormDescription className="text-xs text-muted-foreground">
+                    {t('settings.subscriptions.applications.iconUrlDescription', { defaultValue: 'Optional. Shown next to app name.' })}
+                  </FormDescription>
                 </div>
                 <div className="space-y-1 sm:col-span-2">
                   <FormLabel className="text-xs text-muted-foreground/80">{t('settings.subscriptions.applications.importUrl')}</FormLabel>
-                  <Input value={newAppImportUrl} onChange={e => setNewAppImportUrl(e.target.value)} placeholder={t('settings.subscriptions.applications.importUrlPlaceholder')} className="h-8 text-xs font-mono" dir="ltr" />
+                  <Input
+                    value={newAppImportUrl}
+                    onChange={e => setNewAppImportUrl(e.target.value)}
+                    placeholder={t('settings.subscriptions.applications.importUrlPlaceholder')}
+                    className="h-8 font-mono text-xs"
+                    dir="ltr"
+                  />
                   <FormDescription className="text-xs text-muted-foreground">{t('settings.subscriptions.applications.importUrlDescription')}</FormDescription>
                 </div>
 
@@ -1291,7 +1316,7 @@ export default function SubscriptionSettings() {
                   <div className="flex flex-col gap-2 sm:flex-row">
                     <Select value={newDescLang} onValueChange={(v: any) => setNewDescLang(v)}>
                       <FormControl>
-                        <SelectTrigger className="w-full h-8 text-xs sm:w-32">
+                        <SelectTrigger className="h-8 w-full text-xs sm:w-32">
                           <SelectValue />
                         </SelectTrigger>
                       </FormControl>
@@ -1307,7 +1332,7 @@ export default function SubscriptionSettings() {
                       value={newAppDescription?.[newDescLang] || ''}
                       onChange={e => setNewAppDescription(prev => ({ ...(prev || {}), [newDescLang]: e.target.value }))}
                       placeholder={t('settings.subscriptions.applications.descriptionPlaceholder', { lang: newDescLang.toUpperCase() })}
-                      className="h-8 text-xs flex-1"
+                      className="h-8 flex-1 text-xs"
                     />
                   </div>
                 </div>
@@ -1327,11 +1352,22 @@ export default function SubscriptionSettings() {
                 <div className="space-y-1 sm:col-span-2">
                   <FormLabel className="text-xs font-medium text-muted-foreground/80">{t('settings.subscriptions.applications.downloadLinks')} (1)</FormLabel>
                   <div className="flex flex-col gap-2 sm:flex-row">
-                    <Input value={newLinkName} onChange={e => setNewLinkName(e.target.value)} placeholder={t('settings.subscriptions.applications.downloadLinkNamePlaceholder')} className="h-8 text-xs flex-1" />
-                    <Input value={newLinkUrl} onChange={e => setNewLinkUrl(e.target.value)} placeholder={t('settings.subscriptions.applications.downloadLinkUrlPlaceholder')} className="h-8 text-xs font-mono flex-1" dir="ltr" />
+                    <Input
+                      value={newLinkName}
+                      onChange={e => setNewLinkName(e.target.value)}
+                      placeholder={t('settings.subscriptions.applications.downloadLinkNamePlaceholder')}
+                      className="h-8 flex-1 text-xs"
+                    />
+                    <Input
+                      value={newLinkUrl}
+                      onChange={e => setNewLinkUrl(e.target.value)}
+                      placeholder={t('settings.subscriptions.applications.downloadLinkUrlPlaceholder')}
+                      className="h-8 flex-1 font-mono text-xs"
+                      dir="ltr"
+                    />
                     <Select value={newLinkLang} onValueChange={(v: any) => setNewLinkLang(v)}>
                       <FormControl>
-                        <SelectTrigger className="h-8 text-xs w-full sm:w-28">
+                        <SelectTrigger className="h-8 w-full text-xs sm:w-28">
                           <SelectValue />
                         </SelectTrigger>
                       </FormControl>
@@ -1347,7 +1383,7 @@ export default function SubscriptionSettings() {
                 </div>
               </div>
             </div>
-            <div className="flex justify-end gap-2 mt-4">
+            <div className="mt-4 flex justify-end gap-2">
               <Button type="button" variant="outline" onClick={() => setIsAddAppOpen(false)} disabled={isSaving}>
                 {t('cancel')}
               </Button>

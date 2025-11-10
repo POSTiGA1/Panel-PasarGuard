@@ -8,13 +8,14 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import useDirDetection from '@/hooks/use-dir-detection'
 import { cn } from '@/lib/utils'
 import { debounce } from 'es-toolkit'
-import { RefreshCw, SearchIcon, Filter, X, ArrowUpDown, User, Calendar, ChartPie, ChevronDown } from 'lucide-react'
-import { useState, useRef, useEffect } from 'react'
+import { RefreshCw, SearchIcon, Filter, X, ArrowUpDown, User, Calendar, ChartPie, ChevronDown, Check, Clock } from 'lucide-react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useGetUsers, UserStatus } from '@/service/api'
 import { RefetchOptions } from '@tanstack/react-query'
 import { LoaderCircle } from 'lucide-react'
 import { UseFormReturn } from 'react-hook-form'
+import { getUsersAutoRefreshIntervalSeconds, setUsersAutoRefreshIntervalSeconds } from '@/utils/userPreferenceStorage'
 
 // Sort configuration to eliminate duplication
 const sortSections = [
@@ -23,8 +24,8 @@ const sortSections = [
     icon: User,
     label: 'username',
     items: [
-      { value: 'username', label: 'sort.username.asc' },
       { value: '-username', label: 'sort.username.desc' },
+      { value: 'username', label: 'sort.username.asc' },
     ],
   },
   {
@@ -32,8 +33,8 @@ const sortSections = [
     icon: Calendar,
     label: 'expireDate',
     items: [
-      { value: 'expire', label: 'sort.expire.oldest' },
       { value: '-expire', label: 'sort.expire.newest' },
+      { value: 'expire', label: 'sort.expire.oldest' },
     ],
   },
   {
@@ -41,10 +42,27 @@ const sortSections = [
     icon: ChartPie,
     label: 'dataUsage',
     items: [
-      { value: 'used_traffic', label: 'sort.usage.low' },
       { value: '-used_traffic', label: 'sort.usage.high' },
+      { value: 'used_traffic', label: 'sort.usage.low' },
     ],
   },
+  {
+    key: 'onlineAt',
+    icon: Clock,
+    label: 'lastOnline',
+    items: [
+      { value: '-online_at', label: 'sort.online.newest' },
+      { value: 'online_at', label: 'sort.online.oldest' },
+    ],
+  },
+] as const
+
+const autoRefreshOptions = [
+  { value: 0, labelKey: 'autoRefresh.off' },
+  { value: 15, labelKey: 'autoRefresh.15Seconds' },
+  { value: 30, labelKey: 'autoRefresh.30Seconds' },
+  { value: 60, labelKey: 'autoRefresh.1Minute' },
+  { value: 300, labelKey: 'autoRefresh.5Minutes' },
 ] as const
 
 interface FiltersProps {
@@ -69,8 +87,43 @@ export const Filters = ({ filters, onFilterChange, refetch, advanceSearchOnOpen,
   const dir = useDirDetection()
   const [search, setSearch] = useState(filters.search || '')
   const [isRefreshing, setIsRefreshing] = useState(false)
-  const userQuery = useGetUsers(filters)
-  const handleRefetch = refetch || userQuery.refetch
+  const [autoRefreshInterval, setAutoRefreshInterval] = useState<number>(() => getUsersAutoRefreshIntervalSeconds())
+  const { refetch: queryRefetch } = useGetUsers(filters)
+  const refetchUsers = useCallback(() => {
+    const refetchFn = refetch ?? queryRefetch
+    return refetchFn()
+  }, [refetch, queryRefetch])
+  useEffect(() => {
+    const persistedValue = getUsersAutoRefreshIntervalSeconds()
+    setAutoRefreshInterval(prev => (prev === persistedValue ? prev : persistedValue))
+  }, [])
+  useEffect(() => {
+    if (!autoRefreshInterval) return
+    const intervalId = setInterval(() => {
+      refetchUsers()
+    }, autoRefreshInterval * 1000)
+    return () => clearInterval(intervalId)
+  }, [autoRefreshInterval, refetchUsers])
+  useEffect(() => {
+    if (typeof document === 'undefined') return
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && autoRefreshInterval > 0) {
+        refetchUsers()
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
+  }, [autoRefreshInterval, refetchUsers])
+  const currentAutoRefreshOption = autoRefreshOptions.find(option => option.value === autoRefreshInterval) ?? autoRefreshOptions[0]
+  const autoRefreshShortLabel =
+    autoRefreshInterval === 0
+      ? t('autoRefresh.offShort')
+      : autoRefreshInterval < 60
+        ? t('autoRefresh.shortSeconds', { count: autoRefreshInterval })
+        : t('autoRefresh.shortMinutes', { count: Math.round(autoRefreshInterval / 60) })
+  const currentAutoRefreshDescription = t(currentAutoRefreshOption.labelKey)
   const onFilterChangeRef = useRef(onFilterChange)
 
   // Keep the ref in sync with the prop
@@ -83,7 +136,7 @@ export const Filters = ({ filters, onFilterChange, refetch, advanceSearchOnOpen,
         search: value,
         offset: 0,
       })
-    }, 300)
+    }, 300),
   )
 
   // Cleanup on unmount
@@ -114,11 +167,16 @@ export const Filters = ({ filters, onFilterChange, refetch, advanceSearchOnOpen,
   const handleRefreshClick = async () => {
     setIsRefreshing(true)
     try {
-      await handleRefetch()
+      await refetchUsers()
     } finally {
       // Instant response - no delay
       setIsRefreshing(false)
     }
+  }
+
+  const handleAutoRefreshChange = (seconds: number) => {
+    setUsersAutoRefreshIntervalSeconds(seconds)
+    setAutoRefreshInterval(seconds)
   }
 
   const handleOpenAdvanceSearch = () => {
@@ -150,9 +208,9 @@ export const Filters = ({ filters, onFilterChange, refetch, advanceSearchOnOpen,
   }
 
   return (
-    <div dir={dir} className="flex items-center gap-4 py-4">
+    <div dir={dir} className="flex items-center gap-2 py-4 md:gap-4">
       {/* Search Input */}
-      <div className="relative w-full md:w-[calc(100%/3-10px)]">
+      <div className="relative min-w-0 flex-1 md:w-[calc(100%/3-10px)] md:flex-none">
         <SearchIcon className={cn('absolute', dir === 'rtl' ? 'right-2' : 'left-2', 'top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 text-input-placeholder')} />
         <Input placeholder={t('search')} value={search} onChange={handleSearchChange} className="pl-8 pr-10" />
         {search && (
@@ -161,8 +219,8 @@ export const Filters = ({ filters, onFilterChange, refetch, advanceSearchOnOpen,
           </button>
         )}
       </div>
-      <div className="flex h-full items-center gap-1">
-        <Button size="icon-md" variant="ghost" className="relative flex items-center gap-2 border" onClick={handleOpenAdvanceSearch}>
+      <div className="flex h-full flex-shrink-0 items-center gap-1">
+        <Button size="icon-md" variant="ghost" className="relative flex h-9 w-9 items-center justify-center border md:h-10 md:w-10" onClick={handleOpenAdvanceSearch}>
           <Filter className="h-4 w-4" />
           {hasActiveAdvanceFilters() && (
             <Badge variant="destructive" className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full p-0 text-xs">
@@ -173,7 +231,7 @@ export const Filters = ({ filters, onFilterChange, refetch, advanceSearchOnOpen,
         {hasActiveAdvanceFilters() && onClearAdvanceSearch && (
           <Popover>
             <PopoverTrigger asChild>
-              <Button size="sm" variant="outline" className={cn('h-8 w-8 p-0', dir === 'rtl' ? 'rounded-r-none border-r-0' : 'rounded-l-none border-l-0')} onClick={onClearAdvanceSearch}>
+              <Button size="sm" variant="outline" className={cn('h-9 w-9 p-0 md:h-8 md:w-8', dir === 'rtl' ? 'rounded-r-none border-r-0' : 'rounded-l-none border-l-0')} onClick={onClearAdvanceSearch}>
                 <X className="h-3 w-3" />
               </Button>
             </PopoverTrigger>
@@ -185,21 +243,26 @@ export const Filters = ({ filters, onFilterChange, refetch, advanceSearchOnOpen,
       </div>
       {/* Sort Button */}
       {handleSort && (
-        <div className="flex h-full items-center gap-1">
+        <div className="flex h-full flex-shrink-0 items-center gap-1">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button size="icon-md" variant="ghost" className="relative flex items-center gap-2 border" aria-label={t('sortOptions', { defaultValue: 'Sort Options' })}>
+              <Button
+                size="icon-md"
+                variant="ghost"
+                className="relative flex h-9 w-9 items-center justify-center border md:h-10 md:w-10"
+                aria-label={t('sortOptions', { defaultValue: 'Sort Options' })}
+              >
                 <ArrowUpDown className="h-4 w-4" />
                 {filters.sort && filters.sort !== '-created_at' && <div className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-primary" />}
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-52 md:w-56">
+            <DropdownMenuContent align="end" className="w-44">
               {sortSections.map((section, sectionIndex) => (
                 <div key={section.key}>
                   {/* Section Label */}
-                  <DropdownMenuLabel className="flex items-center gap-1.5 px-2 py-1.5 text-xs text-muted-foreground md:gap-2 md:px-3 md:py-2">
-                    <section.icon className="h-3 w-3" />
-                    <span className="text-xs md:text-sm">{t(section.label)}</span>
+                  <DropdownMenuLabel className="flex items-center gap-1 px-1.5 py-1 text-[10px] text-muted-foreground">
+                    <section.icon className="h-2.5 w-2.5" />
+                    <span className="text-[10px]">{t(section.label)}</span>
                   </DropdownMenuLabel>
 
                   {/* Section Items */}
@@ -207,11 +270,10 @@ export const Filters = ({ filters, onFilterChange, refetch, advanceSearchOnOpen,
                     <DropdownMenuItem
                       key={item.value}
                       onClick={() => handleSort && handleSort(item.value, true)}
-                      className={`whitespace-nowrap px-2 py-1.5 text-xs md:px-3 md:py-2 ${filters.sort === item.value ? 'bg-accent' : ''}`}
+                      className={`whitespace-nowrap px-1.5 py-1 text-[11px] ${filters.sort === item.value ? 'bg-accent' : ''}`}
                     >
-                      <section.icon className="mr-1.5 h-3 w-3 flex-shrink-0 md:mr-2 md:h-4 md:w-4" />
                       <span className="truncate">{t(item.label)}</span>
-                      {filters.sort === item.value && <ChevronDown className={`ml-auto h-3 w-3 flex-shrink-0 md:h-4 md:w-4 ${item.value.startsWith('-') ? '' : 'rotate-180'}`} />}
+                      {filters.sort === item.value && <ChevronDown className={`ml-auto h-2.5 w-2.5 flex-shrink-0 ${item.value.startsWith('-') ? '' : 'rotate-180'}`} />}
                     </DropdownMenuItem>
                   ))}
 
@@ -224,10 +286,58 @@ export const Filters = ({ filters, onFilterChange, refetch, advanceSearchOnOpen,
         </div>
       )}
       {/* Refresh Button */}
-      <div className="flex h-full items-center gap-2">
-        <Button size="icon-md" onClick={handleRefreshClick} variant="ghost" className="flex items-center gap-2 border" disabled={isRefreshing}>
+      <div className="flex h-full flex-shrink-0 items-center gap-0">
+        <Button
+          size="icon-md"
+          onClick={handleRefreshClick}
+          variant="ghost"
+          className={cn('relative flex h-9 w-9 items-center justify-center border md:h-10 md:w-10', dir === 'rtl' ? 'rounded-l-none border-l-0' : 'rounded-r-none')}
+          aria-label={t('autoRefresh.refreshNow')}
+          title={t('autoRefresh.refreshNow')}
+          disabled={isRefreshing}
+        >
           <RefreshCw className={cn('h-4 w-4', isRefreshing && 'animate-spin')} />
+          {autoRefreshInterval > 0 && <div className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-primary" />}
         </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              size="icon-md"
+              variant="ghost"
+              className={cn('relative flex h-9 w-9 items-center justify-center border md:h-10 md:w-10', dir === 'rtl' ? 'rounded-r-none' : 'rounded-l-none border-l-0')}
+              aria-label={t('autoRefresh.label')}
+              title={`${t('autoRefresh.label')} (${autoRefreshShortLabel})`}
+            >
+              <ChevronDown className="h-3 w-3" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-44">
+            <DropdownMenuLabel className="flex flex-col gap-0.5 px-1.5 py-1 text-[10px] text-muted-foreground">
+              <span>{t('autoRefresh.label')}</span>
+              <span className="text-[9px]">{t('autoRefresh.currentSelection', { value: currentAutoRefreshDescription })}</span>
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onSelect={() => void handleRefreshClick()} disabled={isRefreshing} className="flex items-center gap-1.5 px-1.5 py-1 text-[11px]">
+              <RefreshCw className={cn('h-2.5 w-2.5 flex-shrink-0', isRefreshing && 'animate-spin')} />
+              <span className="truncate">{t('autoRefresh.refreshNow')}</span>
+              {isRefreshing && <LoaderCircle className="ml-auto h-2.5 w-2.5 animate-spin" />}
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            {autoRefreshOptions.map(option => {
+              const isActive = option.value === autoRefreshInterval
+              return (
+                <DropdownMenuItem
+                  key={option.value}
+                  onSelect={() => handleAutoRefreshChange(option.value)}
+                  className={cn('flex items-center gap-1.5 whitespace-nowrap px-1.5 py-1 text-[11px]', isActive && 'bg-accent')}
+                >
+                  <span>{t(option.labelKey)}</span>
+                  {isActive && <Check className="ml-auto h-2.5 w-2.5 flex-shrink-0" />}
+                </DropdownMenuItem>
+              )
+            })}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </div>
   )

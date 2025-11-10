@@ -394,18 +394,19 @@ class AdminModifyModale(BaseModal):
         self.query_one("#is_sudo").value = self.admin.is_sudo
         self.query_one("#is_disabled").value = self.admin.is_disabled
 
-        # Handle notification_enable (comes as dict from SQLAlchemy, None = legacy admin)
         # Load existing notification preferences (notification_enable is a dict from SQLAlchemy)
         notif = self.admin.notification_enable or {}
-        master_on = any([
-            notif.get("create", False),
-            notif.get("modify", False),
-            notif.get("delete", False),
-            notif.get("status_change", False),
-            notif.get("reset_data_usage", False),
-            notif.get("data_reset_by_next", False),
-            notif.get("subscription_revoked", False),
-        ])
+        master_on = any(
+            [
+                notif.get("create", False),
+                notif.get("modify", False),
+                notif.get("delete", False),
+                notif.get("status_change", False),
+                notif.get("reset_data_usage", False),
+                notif.get("data_reset_by_next", False),
+                notif.get("subscription_revoked", False),
+            ]
+        )
 
         self.query_one("#notif_master").value = master_on
         self.query_one("#notif_create").value = notif.get("create", False)
@@ -475,9 +476,9 @@ class AdminModifyModale(BaseModal):
         if event.button.id == "save":
             password = self.query_one("#password").value.strip() or None
             confirm_password = self.query_one("#confirm_password").value.strip() or None
-            telegram_id = self.query_one("#telegram_id").value or None
+            telegram_id = self.query_one("#telegram_id").value or 0
             discord_webhook = self.query_one("#discord_webhook").value.strip() or None
-            discord_id = self.query_one("#discord_id").value or None
+            discord_id = self.query_one("#discord_id").value or 0
             is_sudo = self.query_one("#is_sudo").value
             is_disabled = self.query_one("#is_disabled").value
             sub_template = self.query_one("#sub_template").value.strip() or None

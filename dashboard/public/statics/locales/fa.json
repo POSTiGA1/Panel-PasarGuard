@@ -67,7 +67,7 @@
         "title": "تلگرام",
         "description": "پیکربندی اعلان‌های ربات تلگرام برای دریافت هشدارهای بلادرنگ در چت یا کانال تلگرام شما",
         "apiToken": "توکن API ربات",
-        "adminId": "شناسه چت مدیر",
+        "chatId": "شناسه چت",
         "channelId": "شناسه کانال",
         "topicId": "شناسه تاپیک"
       },
@@ -102,7 +102,6 @@
         "title": "تنظیمات عمومی",
         "description": "گزینه‌های پیکربندی پایه اشتراک",
         "urlPrefix": "پیشوند آدرس",
-        "urlPrefixPlaceholder": "sub",
         "urlPrefixDescription": "آدرس پایه برای لینک‌های اشتراک",
         "updateInterval": "فاصله به‌روزرسانی (ساعت)",
         "updateIntervalDescription": "هر چند وقت یکبار کلاینت‌ها باید به‌روزرسانی را بررسی کنند",
@@ -576,6 +575,7 @@
   "disabled": "غیر فعال",
   "expire": "انقضا",
   "expireDate": "تاریخ انقضا",
+  "lastOnline": "آخرین آنلاین",
   "expired": "{{time}} منقضی شده",
   "expires": "پایان در {{time}}",
   "sortOptions": "گزینه‌های مرتب‌سازی",
@@ -591,6 +591,10 @@
     "usage": {
       "low": "مصرف داده (کم به زیاد)",
       "high": "مصرف داده (زیاد به کم)"
+    },
+    "online": {
+      "oldest": "آخرین آنلاین (قدیمی‌ترین اول)",
+      "newest": "آخرین آنلاین (جدیدترین اول)"
     }
   },
   "header.donation": "کمک مالی",
@@ -955,6 +959,7 @@
   "subscriptionClients": {
     "title": "کلاینت‌های اشتراک",
     "viewAllClients": "مشاهده کلاینت‌ها",
+    "clients": "کلاینت‌ها",
     "total": "مجموع: {{count}} کلاینت",
     "showing": "نمایش آخرین {{count}} دسترسی",
     "noClients": "هیچ کلاینت اشتراکی یافت نشد",
@@ -962,6 +967,25 @@
     "knownClient": "شناخته شده",
     "unknown": "نامشخص",
     "error": "بارگیری کلاینت‌های اشتراک ناموفق بود"
+  },
+  "userAllIPs": {
+    "title": "آدرس‌های IP - {{username}}",
+    "description": "مشاهده همه آدرس‌های IP مرتبط با کاربر {{username}} در تمام گره‌ها",
+    "viewAllIPs": "مشاهده همه IPها",
+    "ipAddresses": "آدرس‌های IP",
+    "nodeId": "گره #{{nodeId}}",
+    "totalIPs": "{{count}} IP آدرس",
+    "totalIPs_plural": "{{count}} IP آدرس",
+    "lastSeen": "آخرین مشاهده",
+    "refresh": "به‌روزرسانی",
+    "autoRefresh": "به‌روزرسانی خودکار: هر {{seconds}} ثانیه",
+    "refreshed": "آدرس‌های IP به‌روزرسانی شد",
+    "refreshFailed": "به‌روزرسانی آدرس‌های IP ناموفق بود",
+    "userNotFound": "کاربر \"{{username}}\" یافت نشد یا در حال حاضر آفلاین است",
+    "errorLoading": "بارگیری آدرس‌های IP ناموفق بود: {{message}}",
+    "noIPs": "هیچ آدرس IP فعالی یافت نشد. این کاربر ممکن است در حال حاضر به هیچ گره‌ای متصل نباشد.",
+    "ipCopied": "آدرس IP در کلیپ‌بورد کپی شد",
+    "clickToCopy": "کلیک کنید تا آدرس IP کپی شود"
   },
   "search": "جستجو",
   "status.active": "فعال",
@@ -1041,6 +1065,19 @@
   "usersTable.noUserMatched": "به‌نظر میرسه کاربری که جستجو کردید، وجود ندارد",
   "usersTable.status": "وضعیت",
   "usersTable.total": "مجموع",
+  "autoRefresh": {
+    "label": "به‌روزرسانی خودکار",
+    "currentSelection": "حالت فعلی: {{value}}",
+    "off": "فقط به‌روزرسانی دستی",
+    "offShort": "خاموش",
+    "shortSeconds": "{{count}} ث",
+    "shortMinutes": "{{count}} د",
+    "15Seconds": "هر ۱۵ ثانیه",
+    "30Seconds": "هر ۳۰ ثانیه",
+    "1Minute": "هر ۱ دقیقه",
+    "5Minutes": "هر ۵ دقیقه",
+    "refreshNow": "به‌روزرسانی دستی"
+  },
   "statistics.system": "سیستم",
   "statistics.totalTraffic": "کل ترافیک",
   "statistics.networkSpeed": "سرعت شبکه",
@@ -1144,6 +1181,7 @@
     "statusChecking": "در حال بررسی...",
     "reconnect": "دوباره متصل کن",
     "reconnecting": "در حال دوباره متصل کردن...",
+    "reconnectFailed": "دوباره متصل کردن گره ناموفق بود",
     "sync": "همگام‌سازی",
     "syncing": "در حال همگام‌سازی...",
     "syncSuccess": "گره با موفقیت همگام‌سازی شد",
@@ -1253,6 +1291,7 @@
   },
   "success": "موفق",
   "error": "خطا",
+  "tutorial": "مشاهده آموزش",
   "theme": {
     "title": "تم",
     "description": "سفارشی‌سازی تم برنامه شما",

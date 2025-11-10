@@ -3,7 +3,7 @@ import { DataTable } from '@/components/users/data-table'
 import { Filters } from '@/components/users/filters'
 import useDirDetection from '@/hooks/use-dir-detection'
 import { UseEditFormValues } from '@/pages/_dashboard.users'
-import { useGetUsers, UserResponse } from '@/service/api'
+import { useGetUsers, UserResponse, UserStatus } from '@/service/api'
 import { useAdmin } from '@/hooks/use-admin'
 import { getUsersPerPageLimitSize, setUsersPerPageLimitSize } from '@/utils/userPreferenceStorage'
 import { useQueryClient } from '@tanstack/react-query'
@@ -28,14 +28,28 @@ const UsersTable = memo(() => {
   const { admin } = useAdmin()
   const isSudo = admin?.is_sudo || false
 
-  const [filters, setFilters] = useState({
+  const [filters, setFilters] = useState<{
+    limit: number
+    sort: string
+    load_sub: boolean
+    offset: number
+    search?: string
+    proxy_id?: string
+    is_protocol: boolean
+    status?: UserStatus | null
+    admin?: string[]
+    group?: number[]
+  }>({
     limit: itemsPerPage,
     sort: '-created_at',
     load_sub: true,
     offset: 0,
-    search: undefined as string | undefined,
-    proxy_id: undefined as string | undefined, // add proxy_id
-    is_protocol: false, // add is_protocol
+    search: undefined,
+    proxy_id: undefined,
+    is_protocol: false,
+    status: undefined,
+    admin: undefined,
+    group: undefined,
   })
 
   const advanceSearchForm = useForm<AdvanceSearchFormValue>({
@@ -108,6 +122,15 @@ const UsersTable = memo(() => {
     }))
   }, [currentPage, itemsPerPage])
 
+  // Sync advance search form with current filters when modal opens
+  useEffect(() => {
+    if (isAdvanceSearchOpen) {
+      advanceSearchForm.setValue('status', filters.status || '0')
+      advanceSearchForm.setValue('admin', filters.admin || [])
+      advanceSearchForm.setValue('group', filters.group || [])
+    }
+  }, [isAdvanceSearchOpen, filters.status, filters.admin, filters.group, advanceSearchForm])
+
   const {
     data: usersData,
     refetch,
@@ -115,9 +138,8 @@ const UsersTable = memo(() => {
     isFetching,
   } = useGetUsers(filters, {
     query: {
-      refetchOnWindowFocus: false,
-      staleTime: 0, // No stale time - always fetch fresh data
-      gcTime: 0, // No garbage collection time - no caching
+      staleTime: 0,
+      gcTime: 0,
       retry: 1,
     },
   })
@@ -180,24 +202,30 @@ const UsersTable = memo(() => {
     [filters.sort, isSorting],
   )
 
-  const handleStatusFilter = useCallback((value: any) => {
-    // If value is '0' or empty, set status to undefined to remove it from the URL
-    if (value === '0' || value === '') {
-      setFilters(prev => ({
-        ...prev,
-        status: undefined, // Set to undefined so it won't be included in the request
-        offset: 0, // Reset to first page when changing filter
-      }))
-    } else {
-      setFilters(prev => ({
-        ...prev,
-        status: value, // Otherwise set the actual status value
-        offset: 0, // Reset to first page when changing filter
-      }))
-    }
+  const handleStatusFilter = useCallback(
+    (value: any) => {
+      // Sync with advance search form
+      advanceSearchForm.setValue('status', value || '0')
 
-    setCurrentPage(0) // Reset current page
-  }, [])
+      // If value is '0' or empty, set status to undefined to remove it from the URL
+      if (value === '0' || value === '') {
+        setFilters(prev => ({
+          ...prev,
+          status: undefined, // Set to undefined so it won't be included in the request
+          offset: 0, // Reset to first page when changing filter
+        }))
+      } else {
+        setFilters(prev => ({
+          ...prev,
+          status: value, // Otherwise set the actual status value
+          offset: 0, // Reset to first page when changing filter
+        }))
+      }
+
+      setCurrentPage(0) // Reset current page
+    },
+    [advanceSearchForm],
+  )
 
   const handleFilterChange = useCallback((newFilters: Partial<typeof filters>) => {
     setFilters(prev => {
@@ -264,7 +292,7 @@ const UsersTable = memo(() => {
     t,
     dir,
     handleSort,
-    filters,
+    filters: filters as { sort: string; status?: UserStatus | null; [key: string]: unknown },
     handleStatusFilter,
   })
 
