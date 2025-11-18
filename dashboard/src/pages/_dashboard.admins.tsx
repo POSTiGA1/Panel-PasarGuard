@@ -2,16 +2,17 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Plus } from 'lucide-react'
 import { useForm } from 'react-hook-form'
-import PageHeader from '@/components/page-header'
+import PageHeader from '@/components/layout/page-header'
 import { Separator } from '@/components/ui/separator'
 import { toast } from 'sonner'
-import AdminsTable from '@/components/admins/AdminsTable'
-import AdminModal, { adminFormSchema, AdminFormValues } from '@/components/dialogs/AdminModal'
+import AdminsTable from '@/components/admins/admins-table'
+import AdminModal, { adminFormSchema, AdminFormValues } from '@/components/dialogs/admin-modal'
 import { useActivateAllDisabledUsers, useDisableAllActiveUsers, useGetAdmins, useModifyAdmin, useRemoveAdmin, useResetAdminUsage } from '@/service/api'
 import type { AdminDetails } from '@/service/api'
-import AdminsStatistics from '@/components/AdminStatistics.tsx'
+import AdminsStatistics from '@/components/admins/admin-statistics'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { queryClient } from '@/utils/query-client.ts'
+import useDynamicErrorHandler from '@/hooks/use-dynamic-errors'
 
 const initialDefaultValues: Partial<AdminFormValues> = {
   username: '',
@@ -50,6 +51,7 @@ export default function AdminsPage() {
   const modifyDisableAllAdminUsers = useDisableAllActiveUsers()
   const modifyActivateAllAdminUsers = useActivateAllDisabledUsers()
   const resetUsageMutation = useResetAdminUsage()
+  const handleError = useDynamicErrorHandler()
   const handleDelete = async (admin: AdminDetails) => {
     try {
       await removeAdminMutation.mutateAsync({
@@ -64,11 +66,11 @@ export default function AdminsPage() {
       // Invalidate nodes queries
       queryClient.invalidateQueries({ queryKey: ['/api/admins'] })
     } catch (error) {
-      toast.error(t('error', { defaultValue: 'Error' }), {
-        description: t('admins.deleteFailed', {
-          name: admin.username,
-          defaultValue: 'Failed to delete node «{{name}}»',
-        }),
+      handleError({
+        error,
+        fields: [],
+        form,
+        contextKey: 'admins',
       })
     }
   }

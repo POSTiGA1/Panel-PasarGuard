@@ -2,15 +2,17 @@ import asyncio
 
 from PasarGuardNodeBridge import NodeAPIError, PasarGuardNode, Health
 
-from app import on_shutdown, on_startup, scheduler
+from app import on_shutdown, on_startup, scheduler, notification
 from app.db import GetDB
 from app.db.models import Node, NodeStatus
+from app.models.node import NodeNotification
 from app.node import node_manager
 from app.utils.logger import get_logger
 from app.operation.node import NodeOperation
 from app.operation import OperatorType
+from app.db.crud.node import get_limited_nodes
 
-from config import JOB_CORE_HEALTH_CHECK_INTERVAL
+from config import JOB_CORE_HEALTH_CHECK_INTERVAL, JOB_CHECK_NODE_LIMITS_INTERVAL
 
 
 node_operator = NodeOperation(operator_type=OperatorType.SYSTEM)
@@ -29,7 +31,7 @@ async def verify_node_backend_health(node: PasarGuardNode, node_name: str) -> He
         return current_health
 
     try:
-        await asyncio.wait_for(node.get_backend_stats(), timeout=10)
+        await node.get_backend_stats()
         if current_health != Health.HEALTHY:
             await node.set_health(Health.HEALTHY)
             logger.debug(f"[{node_name}] Node health is HEALTHY")
@@ -53,24 +55,26 @@ async def update_node_connection_status(node_id: int, node: PasarGuardNode):
     Update node connection status by getting backend stats and version info.
     """
     try:
-        await node.get_backend_stats(timeout=8)
-        xray_version = await node.core_version()
-        node_version = await node.node_version()
+        await asyncio.wait_for(node.get_backend_stats(), timeout=20)
+        node_version, core_version = await asyncio.wait_for(node.get_versions(), timeout=20)
         async with GetDB() as db:
             await NodeOperation._update_single_node_status(
                 db,
                 node_id,
                 NodeStatus.connected,
-                xray_version=xray_version,
+                xray_version=core_version,
                 node_version=node_version,
             )
+    except asyncio.TimeoutError:
+        logger.warning(f"Node {node_id} connection status check timed out, will retry on next check")
+        return
     except NodeAPIError as e:
         if e.code > -3:
             async with GetDB() as db:
                 await NodeOperation._update_single_node_status(db, node_id, NodeStatus.error, message=e.detail)
         if e.code > 0:
             async with GetDB() as db:
-                await node_operator.connect_node_wrapper(db, node_id)
+                await node_operator.connect_single_node(db, node_id)
 
 
 async def process_node_health_check(db_node: Node, node: PasarGuardNode):
@@ -84,24 +88,23 @@ async def process_node_health_check(db_node: Node, node: PasarGuardNode):
     if node is None:
         return
 
-    if node.requires_hard_reset():
-        async with GetDB() as db:
-            await node_operator.connect_node_wrapper(db, db_node.id)
-        return
-
     try:
-        health = await asyncio.wait_for(verify_node_backend_health(node, db_node.name), timeout=15)
+        health = await asyncio.wait_for(verify_node_backend_health(node, db_node.name), timeout=20)
     except asyncio.TimeoutError:
+        if db_node.status == NodeStatus.connected:
+            logger.warning(f"Node {db_node.id} ({db_node.name}) health check timed out but was previously connected, will retry")
+            return
         async with GetDB() as db:
             await NodeOperation._update_single_node_status(
                 db, db_node.id, NodeStatus.error, message="Health check timeout"
             )
-        return
     except NodeAPIError as e:
         async with GetDB() as db:
-            await NodeOperation._update_single_node_status(
-                db, db_node.id, NodeStatus.error, message=e.detail
-            )
+            await NodeOperation._update_single_node_status(db, db_node.id, NodeStatus.error, message=e.detail)
+
+    if node.requires_hard_reset() or health is None or health in (Health.NOT_CONNECTED, Health.INVALID):
+        async with GetDB() as db:
+            await node_operator.connect_single_node(db, db_node.id)
         return
 
     # Skip nodes that are already healthy and connected
@@ -111,17 +114,44 @@ async def process_node_health_check(db_node: Node, node: PasarGuardNode):
     # Update status for recovering nodes
     if db_node.status in (NodeStatus.connecting, NodeStatus.error) and health == Health.HEALTHY:
         async with GetDB() as db:
+            node_version, core_version = await node.get_versions()
             await NodeOperation._update_single_node_status(
                 db,
                 db_node.id,
                 NodeStatus.connected,
-                xray_version=await node.core_version(),
-                node_version=await node.node_version(),
+                xray_version=core_version,
+                node_version=node_version,
             )
         return
 
     # For all other cases, update connection status
     await update_node_connection_status(db_node.id, node)
+
+
+async def check_node_limits():
+    """
+    Check nodes that have exceeded their data limit and update status to limited.
+    """
+
+    async with GetDB() as db:
+        limited_nodes = await get_limited_nodes(db)
+
+        for db_node in limited_nodes:
+            # Disconnect the node first (stop it from running)
+            await node_operator.disconnect_single_node(db_node.id)
+
+            # Update status to limited
+            await NodeOperation._update_single_node_status(
+                db, db_node.id, NodeStatus.limited, message="Data limit exceeded", send_notification=False
+            )
+
+            # Send notification
+            node_notif = NodeNotification(
+                id=db_node.id, name=db_node.name, xray_version=db_node.xray_version, node_version=db_node.node_version
+            )
+            await notification.limited_node(node_notif, db_node.data_limit, db_node.used_traffic)
+
+            logger.info(f'Node "{db_node.name}" (ID: {db_node.id}) marked as limited due to data limit')
 
 
 async def node_health_check():
@@ -149,8 +179,14 @@ async def initialize_nodes():
             await node_operator.connect_nodes_bulk(db, db_nodes)
             logger.info("All nodes' cores have been started.")
 
+    # Schedule node health check job (runs frequently)
     scheduler.add_job(
         node_health_check, "interval", seconds=JOB_CORE_HEALTH_CHECK_INTERVAL, coalesce=True, max_instances=1
+    )
+
+    # Schedule node limits check job (runs less frequently)
+    scheduler.add_job(
+        check_node_limits, "interval", seconds=JOB_CHECK_NODE_LIMITS_INTERVAL, coalesce=True, max_instances=1
     )
 
 

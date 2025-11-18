@@ -2,7 +2,7 @@ import asyncio
 from datetime import datetime as dt
 from typing import AsyncIterator, Callable
 
-from PasarGuardNodeBridge import PasarGuardNode, NodeAPIError
+from PasarGuardNodeBridge import NodeAPIError, PasarGuardNode
 from sqlalchemy.exc import IntegrityError
 
 from app import notification
@@ -18,6 +18,7 @@ from app.db.crud.node import (
     get_nodes_usage,
     modify_node,
     remove_node,
+    reset_node_usage,
     update_node_status,
 )
 from app.db.crud.user import get_user
@@ -50,8 +51,20 @@ class NodeOperation(BaseOperation):
         offset: int | None = None,
         limit: int | None = None,
         enabled: bool = False,
+        status: NodeStatus | list[NodeStatus] | None = None,
+        ids: list[int] | None = None,
+        search: str | None = None,
     ) -> list[Node]:
-        return await get_nodes(db=db, core_id=core_id, offset=offset, limit=limit, enabled=enabled)
+        return await get_nodes(
+            db=db,
+            core_id=core_id,
+            offset=offset,
+            limit=limit,
+            enabled=enabled,
+            status=status,
+            ids=ids,
+            search=search,
+        )
 
     @staticmethod
     async def _update_single_node_status(
@@ -144,7 +157,6 @@ class NodeOperation(BaseOperation):
                 users=users,
                 keep_alive=db_node.keep_alive,
                 exclude_inbounds=core.exclude_inbound_tags,
-                timeout=10,
             )
             logger.info(f'Connected to "{db_node.name}" node v{info.node_version}, xray run on v{info.core_version}')
 
@@ -182,7 +194,7 @@ class NodeOperation(BaseOperation):
 
         try:
             await node_manager.update_node(db_node)
-            asyncio.create_task(self.connect_node_wrapper(db, db_node.id))
+            asyncio.create_task(self.connect_single_node(db, db_node.id))
         except NodeAPIError as e:
             await self._update_single_node_status(db, db_node.id, NodeStatus.error, message=e.detail)
 
@@ -206,12 +218,12 @@ class NodeOperation(BaseOperation):
         except IntegrityError:
             await self.raise_error(message=f'Node "{db_node.name}" already exists', code=409, db=db)
 
-        if db_node.status is NodeStatus.disabled:
-            await node_manager.remove_node(db_node.id)
+        if db_node.status in (NodeStatus.disabled, NodeStatus.limited):
+            await self.disconnect_single_node(db_node.id)
         else:
             try:
                 await node_manager.update_node(db_node)
-                asyncio.create_task(self.connect_node_wrapper(db, db_node.id))
+                asyncio.create_task(self.connect_single_node(db, db_node.id))
             except NodeAPIError as e:
                 await self._update_single_node_status(db, db_node.id, NodeStatus.error, message=e.detail)
 
@@ -233,6 +245,37 @@ class NodeOperation(BaseOperation):
 
         asyncio.create_task(notification.remove_node(db_node, admin.username))
 
+    async def reset_node_usage(self, db: AsyncSession, node_id: int, admin: AdminDetails) -> NodeResponse:
+        """
+        Reset a node's traffic usage (uplink and downlink to 0) and create a log entry.
+
+        Args:
+            db: Database session
+            node_id: ID of the node to reset
+            admin: Admin performing the action
+
+        Returns:
+            NodeResponse: Updated node object
+        """
+        db_node = await self.get_validated_node(db=db, node_id=node_id)
+
+        # Store old values for notification
+        old_uplink = db_node.uplink
+        old_downlink = db_node.downlink
+
+        # Reset usage (creates log entry and sets uplink/downlink to 0)
+        db_node = await reset_node_usage(db, db_node)
+
+        # Create response
+        node = NodeResponse.model_validate(db_node)
+
+        # Send notification
+        asyncio.create_task(notification.reset_node_usage(node, admin.username, old_uplink, old_downlink))
+
+        logger.info(f'Node "{db_node.name}" (ID: {db_node.id}) usage reset by admin "{admin.username}"')
+
+        return node
+
     async def connect_nodes_bulk(
         self,
         db: AsyncSession,
@@ -252,6 +295,9 @@ class NodeOperation(BaseOperation):
         users = await core_users(db=db)
 
         async def connect_single(node: Node) -> dict | None:
+            if node is None or node.status in (NodeStatus.disabled, NodeStatus.limited):
+                return
+
             try:
                 await node_manager.update_node(node)
             except NodeAPIError as e:
@@ -306,22 +352,92 @@ class NodeOperation(BaseOperation):
             elif notif["status"] == NodeStatus.error and notif["old_status"] != NodeStatus.error:
                 asyncio.create_task(notification.error_node(notif["node"]))
 
-    async def connect_node_wrapper(self, db: AsyncSession, node_id: int) -> None:
+    async def connect_single_node(self, db: AsyncSession, node_id: int) -> None:
         """
-        Connect single node by wrapping it in a list for bulk operation.
+        Connect a single node and update its status (optimized for single-node operations).
+
+        Uses simple UPDATE statement instead of bulk update to avoid deadlock risks
+        and unnecessary complexity.
 
         Args:
             db (AsyncSession): Database session.
             node_id (int): ID of the node to connect.
         """
         db_node = await get_node_by_id(db, node_id)
-        if db_node is None:
+        if db_node is None or db_node.status in (NodeStatus.disabled, NodeStatus.limited):
             return
 
-        await self.connect_nodes_bulk(db, [db_node])
+        # Get core users once
+        users = await core_users(db=db)
+
+        # Update node manager
+        try:
+            await node_manager.update_node(db_node)
+        except NodeAPIError as e:
+            # Update status to error using simple CRUD
+            await update_node_status(
+                db=db,
+                db_node=db_node,
+                status=NodeStatus.error,
+                message=e.detail,
+            )
+
+            # Send error notification
+            node_notif = NodeNotification(
+                id=db_node.id,
+                name=db_node.name,
+                message=e.detail,
+            )
+            asyncio.create_task(notification.error_node(node_notif))
+            return
+
+        # Connect the node
+        result = await NodeOperation.connect_node(db_node, users)
+
+        if not result:
+            return
+
+        # Update status using simple CRUD (NOT bulk!)
+        await update_node_status(
+            db=db,
+            db_node=db_node,
+            status=result["status"],
+            message=result.get("message", ""),
+            xray_version=result.get("xray_version", ""),
+            node_version=result.get("node_version", ""),
+        )
+
+        # Send appropriate notification
+        if result["status"] == NodeStatus.connected:
+            node_notif = NodeNotification(
+                id=db_node.id,
+                name=db_node.name,
+                xray_version=result.get("xray_version"),
+                node_version=result.get("node_version"),
+            )
+            asyncio.create_task(notification.connect_node(node_notif))
+        elif result["status"] == NodeStatus.error and result["old_status"] != NodeStatus.error:
+            node_notif = NodeNotification(
+                id=db_node.id,
+                name=db_node.name,
+                message=result.get("message"),
+            )
+            asyncio.create_task(notification.error_node(node_notif))
+
+    async def disconnect_single_node(self, node_id: int) -> None:
+        """
+        Disconnect a single node from the node manager (stop it from running).
+
+        Used when a node needs to be stopped (e.g., when limited or disabled).
+
+        Args:
+            node_id (int): ID of the node to disconnect.
+        """
+        await node_manager.remove_node(node_id)
+        logger.info(f'Node "{node_id}" disconnected')
 
     async def restart_node(self, db: AsyncSession, node_id: Node, admin: AdminDetails) -> None:
-        await self.connect_node_wrapper(db, node_id)
+        await self.connect_single_node(db, node_id)
         logger.info(f'Node "{node_id}" restarted by admin "{admin.username}"')
 
     async def restart_all_node(self, db: AsyncSession, admin: AdminDetails, core_id: int | None = None) -> None:
@@ -338,7 +454,7 @@ class NodeOperation(BaseOperation):
         node_id: int | None = None,
         group_by_node: bool = False,
     ) -> NodeUsageStatsList:
-        start, end = await self.validate_dates(start, end)
+        start, end = await self.validate_dates(start, end, True)
         return await get_nodes_usage(db, start, end, period=period, node_id=node_id, group_by_node=group_by_node)
 
     async def get_logs(self, node_id: Node) -> Callable[[], AsyncIterator[asyncio.Queue]]:
@@ -352,7 +468,7 @@ class NodeOperation(BaseOperation):
     async def get_node_stats_periodic(
         self, db: AsyncSession, node_id: id, start: dt = None, end: dt = None, period: Period = Period.hour
     ) -> NodeStatsList:
-        start, end = await self.validate_dates(start, end)
+        start, end = await self.validate_dates(start, end, True)
 
         return await get_node_stats(db, node_id, start, end, period=period)
 

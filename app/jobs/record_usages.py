@@ -1,20 +1,21 @@
 import asyncio
 import random
 from collections import defaultdict
-from datetime import datetime as dt, timezone as tz, timedelta as td
+from datetime import datetime as dt, timedelta as td, timezone as tz
 from operator import attrgetter
 
-from PasarGuardNodeBridge import PasarGuardNode, NodeAPIError
+from PasarGuardNodeBridge import NodeAPIError, PasarGuardNode
 from PasarGuardNodeBridge.common.service_pb2 import StatType
 from sqlalchemy import and_, bindparam, insert, select, update
+from sqlalchemy.dialects.mysql import insert as mysql_insert
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.exc import DatabaseError, OperationalError
 from sqlalchemy.sql.expression import Insert
-from sqlalchemy.dialects.postgresql import insert as pg_insert
-from sqlalchemy.dialects.mysql import insert as mysql_insert
 
 from app import scheduler
 from app.db import GetDB
-from app.db.models import Admin, NodeUsage, NodeUserUsage, System, User
+from app.db.base import engine
+from app.db.models import Admin, Node, NodeUsage, NodeUserUsage, System, User
 from app.node import node_manager as node_manager
 from app.utils.logger import get_logger
 from config import (
@@ -195,22 +196,24 @@ async def safe_execute(stmt, params=None, max_retries: int = 5):
         params (list[dict], optional): Parameters for the statement
         max_retries (int, optional): Maximum number of retry attempts (default: 5)
     """
+    statement = stmt
+
+    # Get dialect once before retry loop to avoid repeated DB calls
+    dialect = await get_dialect()
+    if dialect == "mysql" and isinstance(stmt, Insert):
+        # MySQL-specific IGNORE prefix - but skip if using ON DUPLICATE KEY UPDATE
+        if not hasattr(stmt, "_post_values_clause") or stmt._post_values_clause is None:
+            statement = stmt.prefix_with("IGNORE")
+
     for attempt in range(max_retries):
         try:
-            # Create fresh session for each attempt to release any locks from previous attempts
-            async with GetDB() as db:
-                dialect = db.bind.dialect.name
-
-                # MySQL-specific IGNORE prefix - but skip if using ON DUPLICATE KEY UPDATE
-                if dialect == "mysql" and isinstance(stmt, Insert):
-                    # Check if statement already has ON DUPLICATE KEY UPDATE
-                    if not hasattr(stmt, "_post_values_clause") or stmt._post_values_clause is None:
-                        stmt = stmt.prefix_with("IGNORE")
-
-                # Use raw connection to avoid ORM bulk update requirements
-                await (await db.connection()).execute(stmt, params)
-                await db.commit()
-                return  # Success - exit function
+            # engine.begin() ensures commit/rollback + connection return on exit
+            async with engine.begin() as conn:
+                if params is None:
+                    await conn.execute(statement)
+                else:
+                    await conn.execute(statement, params)
+                return
 
         except (OperationalError, DatabaseError) as err:
             # Session auto-closed by context manager, locks released
@@ -447,12 +450,39 @@ async def record_node_usages():
 
     api_params = {node_id: task.result() for node_id, task in tasks.items()}
 
-    total_up = sum(sum(param["up"] for param in params) for params in api_params.values())
-    total_down = sum(sum(param["down"] for param in params) for params in api_params.values())
+    # Calculate per-node totals
+    node_totals = {
+        node_id: {
+            "up": sum(param["up"] for param in params),
+            "down": sum(param["down"] for param in params),
+        }
+        for node_id, params in api_params.items()
+    }
+
+    # Calculate system totals from node totals
+    total_up = sum(node_data["up"] for node_data in node_totals.values())
+    total_down = sum(node_data["down"] for node_data in node_totals.values())
 
     if not (total_up or total_down):
         return
 
+    # Update each node's uplink/downlink
+    node_update_params = [
+        {"node_id": node_id, "up": node_data["up"], "down": node_data["down"]}
+        for node_id, node_data in node_totals.items()
+        if node_data["up"] or node_data["down"]
+    ]
+
+    if node_update_params:
+        node_update_stmt = (
+            update(Node)
+            .where(Node.id == bindparam("node_id"))
+            .values(uplink=Node.uplink + bindparam("up"), downlink=Node.downlink + bindparam("down"))
+            .execution_options(synchronize_session=False)
+        )
+        await safe_execute(node_update_stmt, node_update_params)
+
+    # Update system totals
     system_update_stmt = update(System).values(uplink=System.uplink + total_up, downlink=System.downlink + total_down)
     await safe_execute(system_update_stmt)
 

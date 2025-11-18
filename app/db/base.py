@@ -1,4 +1,3 @@
-from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncAttrs, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase, MappedAsDataclass
 
@@ -41,10 +40,21 @@ class GetDB:  # Context Manager
         return self.db
 
     async def __aexit__(self, exc_type, exc_value, traceback):
-        if isinstance(exc_value, SQLAlchemyError):
-            await self.db.rollback()  # rollback on exception
-
-        await self.db.close()
+        try:
+            if exc_type is not None:
+                # Rollback on any exception
+                await self.db.rollback()
+        except Exception:
+            try:
+                await self.db.rollback()
+            except Exception:
+                pass
+        finally:
+            # Always close the session to return connection to pool
+            try:
+                await self.db.close()
+            except Exception:
+                pass
 
 
 async def get_db():  # Dependency

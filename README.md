@@ -17,22 +17,19 @@
 
 <br/>
 <p align="center">
-    <a href="#">
+    <a href="https://github.com/PasarGuard/panel/actions/workflows/build.yml" target="_blank">
         <img src="https://img.shields.io/github/actions/workflow/status/PasarGuard/panel/build.yml?style=flat-square" />
     </a>
     <a href="https://hub.docker.com/r/PasarGuard/panel" target="_blank">
         <img src="https://img.shields.io/docker/pulls/pasarguard/panel?style=flat-square&logo=docker" />
     </a>
-    <a href="#">
+    <a href="https://github.com/PasarGuard/panel/blob/main/LICENSE" target="_blank">
         <img src="https://img.shields.io/github/license/PasarGuard/panel?style=flat-square" />
     </a>
     <a href="https://t.me/Pasar_Guard" target="_blank">
         <img src="https://img.shields.io/badge/telegram-group-blue?style=flat-square&logo=telegram" />
     </a>
-    <a href="#">
-        <img src="https://img.shields.io/badge/twitter-commiunity-blue?style=flat-square&logo=twitter" />
-    </a>
-    <a href="#">
+    <a href="https://github.com/PasarGuard/panel" target="_blank">
         <img src="https://img.shields.io/github/stars/PasarGuard/panel?style=social" />
     </a>
 </p>
@@ -132,27 +129,32 @@ PasarGuard is a user-friendly, feature-rich, and reliable proxy management tool.
 
 **TimescaleDB (Recommended):**
 ```bash
-sudo bash -c "$(curl -sL https://github.com/PasarGuard/scripts/raw/main/pasarguard.sh)" @ install --database timescaledb
+curl -fsSL https://github.com/PasarGuard/scripts/raw/main/pasarguard.sh -o /tmp/pg.sh \
+  && sudo bash /tmp/pg.sh install --database timescaledb
 ```
 
 **SQLite:**
 ```bash
-sudo bash -c "$(curl -sL https://github.com/PasarGuard/scripts/raw/main/pasarguard.sh)" @ install
+curl -fsSL https://github.com/PasarGuard/scripts/raw/main/pasarguard.sh -o /tmp/pg.sh \
+  && sudo bash /tmp/pg.sh install
 ```
 
 **MySQL:**
 ```bash
-sudo bash -c "$(curl -sL https://github.com/PasarGuard/scripts/raw/main/pasarguard.sh)" @ install --database mysql
+curl -fsSL https://github.com/PasarGuard/scripts/raw/main/pasarguard.sh -o /tmp/pg.sh \
+  && sudo bash /tmp/pg.sh install --database mysql
 ```
 
 **MariaDB:**
 ```bash
-sudo bash -c "$(curl -sL https://github.com/PasarGuard/scripts/raw/main/pasarguard.sh)" @ install --database mariadb
+curl -fsSL https://github.com/PasarGuard/scripts/raw/main/pasarguard.sh -o /tmp/pg.sh \
+  && sudo bash /tmp/pg.sh install --database mariadb
 ```
 
 **PostgreSQL:**
 ```bash
-sudo bash -c "$(curl -sL https://github.com/PasarGuard/scripts/raw/main/pasarguard.sh)" @ install --database postgresql
+curl -fsSL https://github.com/PasarGuard/scripts/raw/main/pasarguard.sh -o /tmp/pg.sh \
+  && sudo bash /tmp/pg.sh install --database postgresql
 ```
 
 ### 📋 After installation:
@@ -168,7 +170,7 @@ sudo bash -c "$(curl -sL https://github.com/PasarGuard/scripts/raw/main/pasargua
 **💾 Data files:** `/var/lib/pasarguard`
 
 **🔒 Important:** Dashboard requires SSL certificate for security
-- Get SSL certificate: [Guide](https://PasarGuard.github.io/PasarGuard/en/examples/issue-ssl-certificate)
+- Get SSL certificate: [Guide](https://docs.pasarguard.org/en/examples/issue-ssl-certificate)
 - Access: `https://YOUR_DOMAIN:8000/dashboard/`
 
 **🔗 For testing without domain:** Use SSH port forwarding (see below)
@@ -203,11 +205,13 @@ pasarguard --help
 
 **📖 Official Documentation** - Complete guides available in:
 
-🇺🇸 **[English](https://PasarGuard.github.io/PasarGuard)**
+🇺🇸 **[English](https://docs.pasarguard.org/en)**
 
-🇮🇷 **[فارسی](https://PasarGuard.github.io/PasarGuard)**
+🇮🇷 **[فارسی](https://docs.pasarguard.org/fa)**
 
-🇷🇺 **[Русский](https://PasarGuard.github.io/PasarGuard)**
+🇷🇺 **[Русский](https://docs.pasarguard.org/ru)**
+
+🇨🇳 **[简体中文](https://docs.pasarguard.org/zh-cn)**
 
 </div>
 
@@ -223,7 +227,7 @@ pasarguard --help
 
 If PasarGuard helps you, consider supporting its development:
 
-[![Donate](https://img.shields.io/badge/Donate-Support%20Us-green?style=for-the-badge)](http://donate.pasarguard.org)
+[![Donate](https://img.shields.io/badge/Donate-Support%20Us-green?style=for-the-badge)](https://donate.pasarguard.org)
 
 **Thank you for your support!** 💖
 
@@ -234,5 +238,4 @@ If PasarGuard helps you, consider supporting its development:
 <p align="center">
   Made with ❤️ for Internet freedom
 </p>
-
 

@@ -3,7 +3,7 @@
  * Do not edit manually.
  * PasarGuardAPI
  * Unified GUI Censorship Resistant Solution
- * OpenAPI spec version: 1.6.1
+ * OpenAPI spec version: 1.7.2
  */
 import { useMutation, useQuery } from '@tanstack/react-query'
 import type {
@@ -112,9 +112,13 @@ export type ReconnectAllNodeParams = {
 }
 
 export type GetNodesParams = {
-  backend_id?: number | null
-  offset?: number
-  limit?: number
+  core_id?: number | null
+  offset?: number | null
+  limit?: number | null
+  status?: NodeStatus[] | null
+  enabled?: boolean
+  ids?: number[] | null
+  search?: string | null
 }
 
 export type GetUsageParams = {
@@ -188,6 +192,13 @@ export type XrayMuxSettingsInputXudpConcurrency = number | null
 
 export type XrayMuxSettingsInputConcurrency = number | null
 
+export interface XrayMuxSettingsInput {
+  enabled?: boolean
+  concurrency?: XrayMuxSettingsInputConcurrency
+  xudp_concurrency?: XrayMuxSettingsInputXudpConcurrency
+  xudp_proxy_udp_443?: Xudp
+}
+
 export interface XrayFragmentSettings {
   /** @pattern ^(:?tlshello|[\d-]{1,16})$ */
   packets: string
@@ -205,13 +216,6 @@ export const Xudp = {
   allow: 'allow',
   skip: 'skip',
 } as const
-
-export interface XrayMuxSettingsInput {
-  enabled?: boolean
-  concurrency?: XrayMuxSettingsInputConcurrency
-  xudp_concurrency?: XrayMuxSettingsInputXudpConcurrency
-  xudp_proxy_udp_443?: Xudp
-}
 
 export type XTLSFlows = (typeof XTLSFlows)[keyof typeof XTLSFlows]
 
@@ -419,7 +423,7 @@ export interface UserTemplateResponse {
   status?: UserTemplateResponseStatus
   reset_usages?: UserTemplateResponseResetUsages
   on_hold_timeout?: UserTemplateResponseOnHoldTimeout
-  data_limit_reset_strategy?: UserDataLimitResetStrategy
+  data_limit_reset_strategy?: DataLimitResetStrategy
   is_disabled?: UserTemplateResponseIsDisabled
   id: number
 }
@@ -465,7 +469,7 @@ export interface UserTemplateModify {
   status?: UserTemplateModifyStatus
   reset_usages?: UserTemplateModifyResetUsages
   on_hold_timeout?: UserTemplateModifyOnHoldTimeout
-  data_limit_reset_strategy?: UserDataLimitResetStrategy
+  data_limit_reset_strategy?: DataLimitResetStrategy
   is_disabled?: UserTemplateModifyIsDisabled
 }
 
@@ -508,7 +512,7 @@ export interface UserTemplateCreate {
   status?: UserTemplateCreateStatus
   reset_usages?: UserTemplateCreateResetUsages
   on_hold_timeout?: UserTemplateCreateOnHoldTimeout
-  data_limit_reset_strategy?: UserDataLimitResetStrategy
+  data_limit_reset_strategy?: DataLimitResetStrategy
   is_disabled?: UserTemplateCreateIsDisabled
 }
 
@@ -579,7 +583,7 @@ export type UserResponseOnHoldExpireDuration = number | null
 
 export type UserResponseNote = string | null
 
-export type UserResponseDataLimitResetStrategy = UserDataLimitResetStrategy | null
+export type UserResponseDataLimitResetStrategy = DataLimitResetStrategy | null
 
 /**
  * data_limit can be 0 or greater
@@ -636,7 +640,7 @@ export type UserModifyOnHoldExpireDuration = number | null
 
 export type UserModifyNote = string | null
 
-export type UserModifyDataLimitResetStrategy = UserDataLimitResetStrategy | null
+export type UserModifyDataLimitResetStrategy = DataLimitResetStrategy | null
 
 /**
  * data_limit can be 0 or greater
@@ -680,17 +684,6 @@ export interface UserIPListAll {
   nodes: UserIPListAllNodes
 }
 
-export type UserDataLimitResetStrategy = (typeof UserDataLimitResetStrategy)[keyof typeof UserDataLimitResetStrategy]
-
-// eslint-disable-next-line @typescript-eslint/no-redeclare
-export const UserDataLimitResetStrategy = {
-  no_reset: 'no_reset',
-  day: 'day',
-  week: 'week',
-  month: 'month',
-  year: 'year',
-} as const
-
 export type UserCreateStatus = UserStatusCreate | null
 
 export type UserCreateNextPlan = NextPlanModel | null
@@ -705,7 +698,7 @@ export type UserCreateOnHoldExpireDuration = number | null
 
 export type UserCreateNote = string | null
 
-export type UserCreateDataLimitResetStrategy = UserDataLimitResetStrategy | null
+export type UserCreateDataLimitResetStrategy = DataLimitResetStrategy | null
 
 /**
  * data_limit can be 0 or greater
@@ -857,7 +850,7 @@ export type SubscriptionUserResponseOnHoldTimeout = string | number | null
 
 export type SubscriptionUserResponseOnHoldExpireDuration = number | null
 
-export type SubscriptionUserResponseDataLimitResetStrategy = UserDataLimitResetStrategy | null
+export type SubscriptionUserResponseDataLimitResetStrategy = DataLimitResetStrategy | null
 
 /**
  * data_limit can be 0 or greater
@@ -1226,6 +1219,7 @@ export const NodeStatus = {
   connecting: 'connecting',
   error: 'error',
   disabled: 'disabled',
+  limited: 'limited',
 } as const
 
 export type NodeStatsListPeriod = Period | null
@@ -1249,6 +1243,10 @@ export interface NodeSettings {
   min_node_version?: string
 }
 
+export type NodeResponseLifetimeDownlink = number | null
+
+export type NodeResponseLifetimeUplink = number | null
+
 export type NodeResponseMessage = string | null
 
 export type NodeResponseNodeVersion = string | null
@@ -1268,16 +1266,20 @@ export interface NodeResponse {
   connection_type: NodeConnectionType
   server_ca: string
   keep_alive: number
-  /** */
-  max_logs?: number
   core_config_id: NodeResponseCoreConfigId
   api_key: NodeResponseApiKey
-  gather_logs?: boolean
+  data_limit?: number
+  data_limit_reset_strategy?: DataLimitResetStrategy
+  reset_time?: number
   id: number
   xray_version: NodeResponseXrayVersion
   node_version: NodeResponseNodeVersion
   status: NodeStatus
   message: NodeResponseMessage
+  uplink?: number
+  downlink?: number
+  lifetime_uplink?: NodeResponseLifetimeUplink
+  lifetime_downlink?: NodeResponseLifetimeDownlink
 }
 
 export interface NodeRealtimeStats {
@@ -1295,17 +1297,21 @@ export interface NodeNotificationEnable {
   delete?: boolean
   connect?: boolean
   error?: boolean
+  limited?: boolean
+  reset_usage?: boolean
 }
 
 export type NodeModifyStatus = NodeStatus | null
 
-export type NodeModifyGatherLogs = boolean | null
+export type NodeModifyResetTime = number | null
+
+export type NodeModifyDataLimitResetStrategy = DataLimitResetStrategy | null
+
+export type NodeModifyDataLimit = number | null
 
 export type NodeModifyApiKey = string | null
 
 export type NodeModifyCoreConfigId = number | null
-
-export type NodeModifyMaxLogs = number | null
 
 export type NodeModifyKeepAlive = number | null
 
@@ -1329,10 +1335,11 @@ export interface NodeModify {
   connection_type?: NodeModifyConnectionType
   server_ca?: NodeModifyServerCa
   keep_alive?: NodeModifyKeepAlive
-  max_logs?: NodeModifyMaxLogs
   core_config_id?: NodeModifyCoreConfigId
   api_key?: NodeModifyApiKey
-  gather_logs?: NodeModifyGatherLogs
+  data_limit?: NodeModifyDataLimit
+  data_limit_reset_strategy?: NodeModifyDataLimitResetStrategy
+  reset_time?: NodeModifyResetTime
   status?: NodeModifyStatus
 }
 
@@ -1353,11 +1360,11 @@ export interface NodeCreate {
   connection_type: NodeConnectionType
   server_ca: string
   keep_alive: number
-  /** */
-  max_logs?: number
   core_config_id: number
   api_key: string
-  gather_logs?: boolean
+  data_limit?: number
+  data_limit_reset_strategy?: DataLimitResetStrategy
+  reset_time?: number
 }
 
 export type NextPlanModelExpire = number | null
@@ -1588,6 +1595,17 @@ export interface Discord {
   token?: DiscordToken
   proxy_url?: DiscordProxyUrl
 }
+
+export type DataLimitResetStrategy = (typeof DataLimitResetStrategy)[keyof typeof DataLimitResetStrategy]
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const DataLimitResetStrategy = {
+  no_reset: 'no_reset',
+  day: 'day',
+  week: 'week',
+  month: 'month',
+  year: 'year',
+} as const
 
 export type CreateUserFromTemplateNote = string | null
 
@@ -2551,6 +2569,52 @@ export const useActivateAllDisabledUsers = <
   mutation?: UseMutationOptions<TData, TError, { username: string }, TContext>
 }): UseMutationResult<TData, TError, { username: string }, TContext> => {
   const mutationOptions = getActivateAllDisabledUsersMutationOptions(options)
+
+  return useMutation(mutationOptions)
+}
+
+/**
+ * Remove all users under a specific admin.
+ * @summary Remove All Users
+ */
+export const removeAllUsers = (username: string) => {
+  return orvalFetcher<unknown>({ url: `/api/admin/${username}/users`, method: 'DELETE' })
+}
+
+export const getRemoveAllUsersMutationOptions = <
+  TData = Awaited<ReturnType<typeof removeAllUsers>>,
+  TError = ErrorType<Unauthorized | Forbidden | NotFound | HTTPValidationError>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<TData, TError, { username: string }, TContext>
+}) => {
+  const mutationKey = ['removeAllUsers']
+  const { mutation: mutationOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } }
+
+  const mutationFn: MutationFunction<Awaited<ReturnType<typeof removeAllUsers>>, { username: string }> = props => {
+    const { username } = props ?? {}
+
+    return removeAllUsers(username)
+  }
+
+  return { mutationFn, ...mutationOptions } as UseMutationOptions<TData, TError, { username: string }, TContext>
+}
+
+export type RemoveAllUsersMutationResult = NonNullable<Awaited<ReturnType<typeof removeAllUsers>>>
+
+export type RemoveAllUsersMutationError = ErrorType<Unauthorized | Forbidden | NotFound | HTTPValidationError>
+
+/**
+ * @summary Remove All Users
+ */
+export const useRemoveAllUsers = <TData = Awaited<ReturnType<typeof removeAllUsers>>, TError = ErrorType<Unauthorized | Forbidden | NotFound | HTTPValidationError>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<TData, TError, { username: string }, TContext>
+}): UseMutationResult<TData, TError, { username: string }, TContext> => {
+  const mutationOptions = getRemoveAllUsersMutationOptions(options)
 
   return useMutation(mutationOptions)
 }
@@ -4242,6 +4306,50 @@ export const useRemoveNode = <TData = Awaited<ReturnType<typeof removeNode>>, TE
   mutation?: UseMutationOptions<TData, TError, { nodeId: number }, TContext>
 }): UseMutationResult<TData, TError, { nodeId: number }, TContext> => {
   const mutationOptions = getRemoveNodeMutationOptions(options)
+
+  return useMutation(mutationOptions)
+}
+
+/**
+ * Reset node traffic usage (uplink and downlink).
+Creates a log entry in node_usage_reset_logs table.
+Only accessible to sudo admins.
+ * @summary Reset Node Usage
+ */
+export const resetNodeUsage = (nodeId: number, signal?: AbortSignal) => {
+  return orvalFetcher<NodeResponse>({ url: `/api/node/${nodeId}/reset`, method: 'POST', signal })
+}
+
+export const getResetNodeUsageMutationOptions = <TData = Awaited<ReturnType<typeof resetNodeUsage>>, TError = ErrorType<Unauthorized | Forbidden | HTTPValidationError>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<TData, TError, { nodeId: number }, TContext>
+}) => {
+  const mutationKey = ['resetNodeUsage']
+  const { mutation: mutationOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } }
+
+  const mutationFn: MutationFunction<Awaited<ReturnType<typeof resetNodeUsage>>, { nodeId: number }> = props => {
+    const { nodeId } = props ?? {}
+
+    return resetNodeUsage(nodeId)
+  }
+
+  return { mutationFn, ...mutationOptions } as UseMutationOptions<TData, TError, { nodeId: number }, TContext>
+}
+
+export type ResetNodeUsageMutationResult = NonNullable<Awaited<ReturnType<typeof resetNodeUsage>>>
+
+export type ResetNodeUsageMutationError = ErrorType<Unauthorized | Forbidden | HTTPValidationError>
+
+/**
+ * @summary Reset Node Usage
+ */
+export const useResetNodeUsage = <TData = Awaited<ReturnType<typeof resetNodeUsage>>, TError = ErrorType<Unauthorized | Forbidden | HTTPValidationError>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<TData, TError, { nodeId: number }, TContext>
+}): UseMutationResult<TData, TError, { nodeId: number }, TContext> => {
+  const mutationOptions = getResetNodeUsageMutationOptions(options)
 
   return useMutation(mutationOptions)
 }

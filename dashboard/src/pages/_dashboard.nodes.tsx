@@ -1,5 +1,5 @@
-import PageHeader from '@/components/page-header'
-import PageTransition from '@/components/PageTransition'
+import PageHeader from '@/components/layout/page-header'
+import PageTransition from '@/components/layout/page-transition'
 import { getDocsUrl } from '@/utils/docs-url'
 import { Cpu, LucideIcon, Share2, Plus, FileText } from 'lucide-react'
 import { useEffect, useState } from 'react'
@@ -85,7 +85,14 @@ const Settings = () => {
             >
               <div className="flex items-center gap-1.5">
                 <tab.icon className="h-4 w-4" />
-                <span>{t(tab.label)}</span>
+                {tab.id === 'core' ? (
+                  <>
+                    <span className="hidden sm:inline">{t(tab.label)}</span>
+                    <span className="sm:hidden">{t('settings.cores.title')}</span>
+                  </>
+                ) : (
+                  <span>{t(tab.label)}</span>
+                )}
               </div>
             </button>
           ))}
